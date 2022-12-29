@@ -2,12 +2,17 @@ nsq:
   nsqlookupd:
     address:
       - 127.0.0.1:4160
-    topic: hpc:judge:jobs
+    topics:
+      judge: runner:judge:request
+      sandbox: runner:sandbox:request
     channel: judgers
   nsqd:
     address: 127.0.0.1:4150
-    topic: hpc:judge:report
+    topics:
+      judge: runner:judge:status
+      sandbox: runner:sandbox:request
   auth-secret: ""
+  concurrent: 4
 minio:
   endpoint: 127.0.0.1:9000
   credentials:
