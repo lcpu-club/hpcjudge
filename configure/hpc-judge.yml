@@ -1,0 +1,18 @@
+nsq:
+  nsqlookupd:
+    address: 127.0.0.1:4160
+  nsqd:
+    address: 127.0.0.1:4150
+minio:
+  endpoint: 127.0.0.1:9000
+  credentials:
+    access-key: 4B7UgT1JIiXKfDkq
+    secret-key: 3UCdtmShneM6C7BVImGSVDWH8D4ANZKW
+  ssl: false
+  buckets:
+    problem: problems
+    solution: solutions
+  presigned-expiry: 5m
+discovery:
+  - 127.0.0.1:20751
+  - 127.0.0.1:20752

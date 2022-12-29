@@ -64,3 +64,17 @@ hpc_discovery_data := "./dev-temp/discovery/hpc-discovery.dat"
 
 hpc-discovery: build-discovery
     ./dist/hpc-discovery serve -k {{ hpc_discovery_access_key }} -l {{ hpc_discovery_listen }} -e {{ hpc_discovery_external_address }} -t {{ hpc_discovery_peer_timeout }} {{ hpc_discovery_peers }}
+
+# hpc-judge configure
+hpc_nsqd_address := "127.0.0.1" + nsqd_tcp
+hpc_nsqlookupd_address := nsqlookupd_tcp_address
+hpc_minio_address := "127.0.0.1" + minio_addr
+hpc_minio_user := minio_user
+hpc_minio_pass := minio_pass
+hpc_nsqlookupd_topic := "hpc:judge:jobs"
+hpc_nsqlookupd_channel := "judgers"
+hpc_nsqd_topic := "hpc:judge:report"
+# end hpc-judge configure
+
+hpc-judge: build-judge
+    ./dist/hpc-judge {{ hpc_nsqlookupd_address }}
