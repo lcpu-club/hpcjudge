@@ -16,3 +16,4 @@
 /dev-temp/
 nsqd.dat
 .env
+/dist/

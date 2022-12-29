@@ -1,3 +1,15 @@
+# Build
+
+build: build-discovery
+    
+mkdir-dist:
+    mkdir -p dist
+
+build-discovery: mkdir-dist
+    go build -o dist/hpc-discovery github.com/lcpu-club/hpcjudge/cmd/hpc-discovery
+
+# End Build
+
 # MinIO Configure
 minio_user := "hpc"
 minio_pass := "hpc@devel"
@@ -41,5 +53,5 @@ hpc_discovery_peers := "-p http://localhost:20751"
 hpc_discovery_data := "./dev-temp/discovery/hpc-discovery.dat"
 # end hpc-discovery configure
 
-hpc_discovery:
-    go run github.com/lcpu-club/hpcjudge/cmd/hpc-discovery serve -k {{ hpc_discovery_access_key }} -l {{ hpc_discovery_listen }} -e {{ hpc_discovery_external_address }} -t {{ hpc_discovery_peer_timeout }} {{ hpc_discovery_peers }}
+hpc-discovery: build-discovery
+    ./dist/hpc-discovery serve -k {{ hpc_discovery_access_key }} -l {{ hpc_discovery_listen }} -e {{ hpc_discovery_external_address }} -t {{ hpc_discovery_peer_timeout }} {{ hpc_discovery_peers }}
