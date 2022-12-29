@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/lcpu-club/hpcjudge/judge"
+	"github.com/lcpu-club/hpcjudge/judge/configure"
 	"github.com/urfave/cli/v3"
 )
 
@@ -16,9 +18,30 @@ func main() {
 		Aliases: []string{"s", "run"},
 		Usage:   "Start the hpc-judge service",
 		Action: func(ctx *cli.Context) error {
-			return nil
+			confFile := ctx.String("configure")
+			conf, err := configure.LoadConfigure(confFile)
+			if err != nil {
+				return err
+			}
+			judger, err := judge.NewJudger(conf)
+			if err != nil {
+				return err
+			}
+			err = judger.Init()
+			if err != nil {
+				return err
+			}
+			return judger.Run()
 		},
-		Flags: []cli.Flag{},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "configure",
+				Aliases:     []string{"config", "c"},
+				Usage:       "The path to configure file (yaml format)",
+				Value:       "/etc/hpc-judge.yml",
+				DefaultText: "/etc/hpc-judge.yml",
+			},
+		},
 	})
 	err := app.Run(os.Args)
 	if err != nil {

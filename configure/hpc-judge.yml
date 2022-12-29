@@ -1,8 +1,13 @@
 nsq:
   nsqlookupd:
-    address: 127.0.0.1:4160
+    address:
+      - 127.0.0.1:4160
+    topic: hpc:judge:jobs
+    channel: judgers
   nsqd:
     address: 127.0.0.1:4150
+    topic: hpc:judge:report
+  auth-secret: ""
 minio:
   endpoint: 127.0.0.1:9000
   credentials:
