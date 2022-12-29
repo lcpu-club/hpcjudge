@@ -8,6 +8,15 @@ mkdir-dist:
 build-discovery: mkdir-dist
     go build -o dist/hpc-discovery github.com/lcpu-club/hpcjudge/cmd/hpc-discovery
 
+build-judge: mkdir-dist
+    go build -o dist/hpc-judge github.com/lcpu-club/hpcjudge/cmd/hpc-judge
+
+build-agent: mkdir-dist
+    go build -o dist/hpc-agent github.com/lcpu-club/hpcjudge/cmd/hpc-agent
+
+build-bridge: mkdir-dist
+    go build -o dist/hpc-agent github.com/lcpu-club/hpcjudge/cmd/hpc-bridge
+
 # End Build
 
 # MinIO Configure

@@ -9,12 +9,12 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "hpc-judge"
-	app.Usage = "HPCGame Judger Service"
+	app.Name = "hpc-bridge"
+	app.Usage = "HPC and Judger communication bridge"
 	app.Commands = append(app.Commands, &cli.Command{
 		Name:    "serve",
 		Aliases: []string{"s", "run"},
-		Usage:   "Start the hpc-judge service",
+		Usage:   "Start the hpc-bridge service",
 		Action: func(ctx *cli.Context) error {
 			return nil
 		},
