@@ -16,11 +16,3 @@ type JudgeReportMessage struct {
 	Timestamp    int64  `json:"timestamp"` // time.Now().UnixMicro()
 	// We don't use time.Now().UnixNano() as it exceeds js's Number.MAX_SAFE_INTEGER
 }
-
-type SandboxOperation string
-
-const (
-	SandboxOperationCreate  SandboxOperation = "create"
-	SandboxOperationDestroy SandboxOperation = "destroy"
-	SandboxOperationStart   SandboxOperation = "start"
-)

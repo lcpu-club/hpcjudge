@@ -27,10 +27,6 @@ func main() {
 			if err != nil {
 				return err
 			}
-			err = judger.Init()
-			if err != nil {
-				return err
-			}
 			return judger.Run()
 		},
 		Flags: []cli.Flag{

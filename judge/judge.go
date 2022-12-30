@@ -34,10 +34,17 @@ func NewJudger(conf *configure.Configure) (*Judger, error) {
 	return j, nil
 }
 
-func (j *Judger) Start() {
-	j.connectMinIO()
-	j.connectDiscovery()
-	j.connectNSQ()
+func (j *Judger) Run() error {
+	err := j.connectMinIO()
+	if err != nil {
+		return err
+	}
+	err = j.connectDiscovery()
+	if err != nil {
+		return err
+	}
+	err = j.connectNSQ()
+	return err
 }
 
 func (j *Judger) connectDiscovery() error {
@@ -105,13 +112,5 @@ func (j *Judger) HandleMessageJudge(msg *nsq.Message) error {
 }
 
 func (j *Judger) HandleMessageSandbox(msg *nsq.Message) error {
-	return nil
-}
-
-func (j *Judger) Init() error {
-	return nil
-}
-
-func (j *Judger) Run() error {
 	return nil
 }
