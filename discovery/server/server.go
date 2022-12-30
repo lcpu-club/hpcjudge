@@ -759,6 +759,44 @@ func (s *Server) HandleList(w http.ResponseWriter, r *http.Request) {
 	s.responseJSON(w, resp)
 }
 
+func (s *Server) HandleListPeers(w http.ResponseWriter, r *http.Request) {
+	s.peerLock.RLock()
+	defer s.peerLock.RUnlock()
+	resp := &protocol.ListPeersResponse{
+		ResponseBase: protocol.ResponseBase{
+			Success: true,
+		},
+	}
+	resp.Data = s.peers
+	if len(s.peers) == 0 {
+		resp.Success = false
+		resp.Error = protocol.ErrNoPeers.Error()
+	}
+	s.responseJSON(w, resp)
+}
+
+func (s *Server) HandleRemovePeer(w http.ResponseWriter, r *http.Request) {
+	if strings.ToUpper(r.Method) != "POST" {
+		s.error400(w)
+		return
+	}
+	req := &protocol.RemovePeerRequest{}
+	if !s.parseRequest(w, r, req) {
+		return
+	}
+	err := s.RemovePeer(req.Peer)
+	resp := &protocol.RemovePeerResponse{
+		ResponseBase: protocol.ResponseBase{
+			Success: true,
+		},
+	}
+	if err != nil {
+		resp.Success = false
+		resp.Error = err.Error()
+	}
+	s.responseJSON(w, resp)
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Server", "hpc-discovery/0.1.0")
 	w.Header().Add("X-Discovery-ID", s.id.String())
@@ -783,6 +821,8 @@ func (s *Server) Start() error {
 		s.mux.HandleFunc("/delete", s.HandleDelete)
 		s.mux.HandleFunc("/query", s.HandleQuery)
 		s.mux.HandleFunc("/list", s.HandleList)
+		s.mux.HandleFunc("/peers/list", s.HandleListPeers)
+		s.mux.HandleFunc("/peers/remove", s.HandleRemovePeer)
 	}
 	log.Println("Listening on", s.listen)
 	return http.ListenAndServe(s.listen, s)

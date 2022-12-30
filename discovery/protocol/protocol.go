@@ -76,3 +76,16 @@ type DeleteRequest struct {
 type DeleteResponse struct {
 	ResponseBase
 }
+
+type ListPeersResponse struct {
+	ResponseBase
+	Data []string `json:"data"`
+}
+
+type RemovePeerRequest struct {
+	Peer string `json:"peer"`
+}
+
+type RemovePeerResponse struct {
+	ResponseBase
+}

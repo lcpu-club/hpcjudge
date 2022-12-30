@@ -1,6 +1,6 @@
 # Build
 
-build: build-discovery
+build: build-discovery build-judge build-agent build-bridge
     
 mkdir-dist:
     mkdir -p dist
