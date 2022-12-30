@@ -13,6 +13,9 @@ nsq:
     report: runner.judge.status
   channel: judgers
   auth-secret: ""
+  max-attempts: 3
+  requeue-delay: 30s
+  msg-timeout: 35s
   concurrent: 4
 minio:
   endpoint: 127.0.0.1:9000

@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/lcpu-club/hpcjudge/judge"
 	"github.com/lcpu-club/hpcjudge/judge/configure"
+	"github.com/lcpu-club/hpcjudge/judge/server"
 	"github.com/urfave/cli/v3"
 )
 
@@ -23,7 +23,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			judger, err := judge.NewJudger(conf)
+			judger, err := server.NewJudger(conf)
 			if err != nil {
 				return err
 			}

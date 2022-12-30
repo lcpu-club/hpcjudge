@@ -17,12 +17,15 @@ type Configure struct {
 }
 
 type NsqConfigure struct {
-	Nsqd       *NsqdConfigure       `yaml:"nsqd"`
-	NsqLookupd *NsqLookupdConfigure `yaml:"nsqlookupd"`
-	AuthSecret string               `yaml:"auth-secret"`
-	Concurrent int                  `yaml:"concurrent"`
-	Topics     *NsqTopicConfigure   `yaml:"topics"`
-	Channel    string               `yaml:"channel"`
+	Nsqd         *NsqdConfigure       `yaml:"nsqd"`
+	NsqLookupd   *NsqLookupdConfigure `yaml:"nsqlookupd"`
+	MaxAttempts  int                  `yaml:"max-attempts"`
+	RequeueDelay time.Duration        `yaml:"requeue-delay"`
+	MsgTimeout   time.Duration        `yaml:"msg-timeout"` // Minimum: 1s
+	AuthSecret   string               `yaml:"auth-secret"`
+	Concurrent   int                  `yaml:"concurrent"`
+	Topics       *NsqTopicConfigure   `yaml:"topics"`
+	Channel      string               `yaml:"channel"`
 }
 
 type NsqdConfigure struct {

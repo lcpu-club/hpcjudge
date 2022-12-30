@@ -1,15 +1,17 @@
-package judge
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/lcpu-club/hpcjudge/common/consts"
 	"github.com/lcpu-club/hpcjudge/discovery"
 	discoveryProtocol "github.com/lcpu-club/hpcjudge/discovery/protocol"
 	"github.com/lcpu-club/hpcjudge/judge/configure"
 	"github.com/lcpu-club/hpcjudge/judge/message"
+	"github.com/lcpu-club/hpcjudge/judge/problem"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/nsqio/go-nsq"
@@ -17,13 +19,14 @@ import (
 )
 
 type Judger struct {
-	id               uuid.UUID
-	nsqConsumer      *nsq.Consumer
-	nsqReport        *nsq.Producer
-	discoveryClient  *discovery.Client
-	discoveryService *discovery.Service
-	configure        *configure.Configure
-	minio            *minio.Client
+	id                      uuid.UUID
+	nsqConsumer             *nsq.Consumer
+	nsqReport               *nsq.Producer
+	discoveryClient         *discovery.Client
+	discoveryService        *discovery.Service
+	configure               *configure.Configure
+	minio                   *minio.Client
+	nsqMessageTouchInterval time.Duration
 }
 
 func NewJudger(conf *configure.Configure) (*Judger, error) {
@@ -77,6 +80,14 @@ func (j *Judger) connectDiscovery() error {
 func (j *Judger) connectNSQ() error {
 	config := nsq.NewConfig()
 	config.AuthSecret = j.configure.Nsq.AuthSecret
+	config.MaxAttempts = uint16(j.configure.Nsq.MaxAttempts) + 1
+	config.MaxRequeueDelay = j.configure.Nsq.RequeueDelay
+	config.MsgTimeout = j.configure.Nsq.MsgTimeout
+	if j.configure.Nsq.MsgTimeout >= 3*time.Second {
+		j.nsqMessageTouchInterval = j.configure.Nsq.MsgTimeout - (1 * time.Second)
+	} else {
+		j.nsqMessageTouchInterval = j.configure.Nsq.MsgTimeout * 2 / 3
+	}
 	var err error
 	j.nsqConsumer, err = nsq.NewConsumer(j.configure.Nsq.Topics.Judge, j.configure.Nsq.Channel, config)
 	if err != nil {
@@ -121,12 +132,62 @@ func (j *Judger) discoverBridge(tags []string, excludeTags []string) (*discovery
 	})
 }
 
+func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
+	probMeta, err := problem.GetProblemMeta(context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, msg.ProblemID)
+	// TODO: implement judge
+	if err != nil {
+		return err
+	}
+	bridgeSvc, err := j.discoverBridge(probMeta.Environment.Tags, probMeta.Environment.ExcludeTags)
+	if err != nil {
+		return err
+	}
+	_ = bridgeSvc
+	return nil
+}
+
 func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	msg.Touch()
 	jMsg := &message.JudgeMessage{}
 	err := json.Unmarshal(msg.Body, jMsg)
 	if err != nil {
+		if msg.Attempts > uint16(j.configure.Nsq.MaxAttempts) {
+			msg.Finish()
+			return nil
+		}
 		return err
 	}
+	if msg.Attempts > uint16(j.configure.Nsq.MaxAttempts) {
+		err := j.publishToReport(&message.JudgeReportMessage{
+			SubmissionID: jMsg.SubmissionID,
+			Success:      false,
+			Done:         true,
+			Error:        message.ErrMaxAttemptsExceeded.Error(),
+			Score:        0,
+			Message:      "Internal Error: " + message.ErrMaxAttemptsExceeded.Error(),
+		})
+		if err != nil {
+			log.Println("ERROR:", err)
+		}
+		msg.Finish()
+		return message.ErrMaxAttemptsExceeded
+	}
+	finCh := make(chan bool)
+	defer func() { finCh <- true }()
+	go func() {
+		select {
+		case <-finCh:
+			return
+		default:
+		}
+		msg.Touch()
+		time.Sleep(j.nsqMessageTouchInterval)
+	}()
+	err = j.ProcessJudge(jMsg)
+	if err != nil {
+		log.Println("ERROR:", err)
+		return err
+	}
+	msg.Finish()
 	return nil
 }
