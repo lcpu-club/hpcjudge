@@ -9,5 +9,5 @@ type Problem struct {
 
 type ProblemEnvironment struct {
 	Tags        []string `json:"tags" yaml:"tags" toml:"tags"`
-	ExcludeTags []string `json:"exclude-tags" yaml:"tags" toml:"exclude-tags"`
+	ExcludeTags []string `json:"exclude-tags" yaml:"exclude-tags" toml:"exclude-tags"`
 }
