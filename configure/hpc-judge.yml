@@ -1,3 +1,4 @@
+id: 92486a75-9640-4f22-a69f-eef51b16af6d
 nsq:
   nsqlookupd:
     address:
@@ -24,5 +25,9 @@ minio:
     solution: solutions
   presigned-expiry: 5m
 discovery:
-  - 127.0.0.1:20751
-  - 127.0.0.1:20752
+  address:
+    - 127.0.0.1:20751
+    - 127.0.0.1:20752
+  access-key: e10adc3949ba59abbe
+  timeout: 5s
+  inform-type: hpc-judge

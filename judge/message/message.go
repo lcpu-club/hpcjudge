@@ -1,7 +1,5 @@
 package message
 
-import "github.com/satori/uuid"
-
 type JudgeMessage struct {
 	ProblemID    string `json:"problem_id"`
 	SubmissionID string `json:"submission_id"`
@@ -26,18 +24,3 @@ const (
 	SandboxOperationDestroy SandboxOperation = "destroy"
 	SandboxOperationStart   SandboxOperation = "start"
 )
-
-type SandboxMessage struct {
-	ID        uuid.UUID        `json:"id"`         // Unique message ID, should be uuid.V4
-	SandboxID string           `json:"sandbox_id"` // Should be a valid unix user name and should ensure uniqueness
-	Operation SandboxOperation `json:"operation"`
-	Policy    string           `json:"policy"`
-}
-
-type SandboxReportMessage struct {
-	ID        uuid.UUID        `json:"id"` // Being uuid.Nil for broadcast / notify
-	SandboxID string           `json:"sandbox_id"`
-	Operation SandboxOperation `json:"operation"`
-	Policy    string           `json:"policy"`
-	BridgeURL string           `json:"bridge-url"`
-}

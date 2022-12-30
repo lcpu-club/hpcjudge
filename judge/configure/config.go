@@ -1,11 +1,17 @@
 package configure
 
-import "time"
+import (
+	"time"
+
+	"github.com/satori/uuid"
+)
 
 type Configure struct {
-	Nsq       *NsqConfigure   `yaml:"nsq"`
-	MinIO     *MinIOConfigure `yaml:"minio"`
-	Discovery []string        `yaml:"discovery"`
+	ID              uuid.UUID           `yaml:"uuid"`
+	ExternalAddress string              `yaml:"external-address"`
+	Nsq             *NsqConfigure       `yaml:"nsq"`
+	MinIO           *MinIOConfigure     `yaml:"minio"`
+	Discovery       *DiscoveryConfigure `yaml:"discovery"`
 }
 
 type NsqConfigure struct {
@@ -52,4 +58,12 @@ type MinIOCredentialsConfigure struct {
 type MinIOBucketsConfigure struct {
 	Problem  string `yaml:"problem"`
 	Solution string `yaml:"solution"`
+}
+
+type DiscoveryConfigure struct {
+	Address    []string      `yaml:"address"`
+	AccessKey  string        `yaml:"access-key"`
+	Timeout    time.Duration `yaml:"timeout"`
+	InformType string        `yaml:"inform-type"`
+	InformTags []string      `yaml:"inform-tags"`
 }

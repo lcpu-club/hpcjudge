@@ -19,7 +19,9 @@ type Server struct {
 	discoveryType      string
 	id                 uuid.UUID
 	externalAddress    string
+	accessKey          string
 	listen             string
+	mux                *http.ServeMux
 }
 
 func (s *Server) Init() error {
@@ -34,7 +36,12 @@ func (s *Server) Init() error {
 		return err
 	}
 	s.id = rSvc.ID
+
 	return nil
+}
+
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
 }
 
 func (s *Server) Start() error {
@@ -42,7 +49,7 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	err = http.ListenAndServe(s.listen, nil)
+	err = http.ListenAndServe(s.listen, s)
 	return err
 }
 

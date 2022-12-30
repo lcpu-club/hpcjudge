@@ -20,7 +20,10 @@ build-bridge: mkdir-dist
 # End Build
 
 run-dependencies:
-    go run github.com/lcpu-club/hpcjudge/cmd/util-multi-run "just minio" "just nsqd" "just nsqlookupd" "just nsqadmin" "just hpc-discovery"
+    go run github.com/lcpu-club/hpcjudge/cmd/dev-util multi-run "just minio" "just nsqd" "just nsqlookupd" "just nsqadmin" "just hpc-discovery"
+
+gen-uuid-v4:
+    go run github.com/lcpu-club/hpcjudge/cmd/dev-util gen-uuid-v4
 
 # MinIO Configure
 minio_user := "hpc"
