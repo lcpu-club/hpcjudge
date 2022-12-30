@@ -20,7 +20,7 @@ build-bridge: mkdir-dist
 # End Build
 
 run-dependencies:
-    go run github.com/lcpu-club/hpcjudge/cmd/dev-util multi-run "just minio" "just nsqd" "just nsqlookupd" "just nsqadmin" "just hpc-discovery"
+    go run github.com/lcpu-club/hpcjudge/cmd/dev-util multi-run "just nsqlookupd" "just minio" "just nsqd" "just nsqadmin" "just hpc-discovery"
 
 gen-uuid-v4:
     go run github.com/lcpu-club/hpcjudge/cmd/dev-util gen-uuid-v4
@@ -80,7 +80,8 @@ hpc_minio_pass := minio_pass
 hpc_nsqlookupd_topic := "hpc:judge:jobs"
 hpc_nsqlookupd_channel := "judgers"
 hpc_nsqd_topic := "hpc:judge:report"
+hpc_judge_configure := "./configure/hpc-judge.yml"
 # end hpc-judge configure
 
 hpc-judge: build-judge
-    ./dist/hpc-judge {{ hpc_nsqlookupd_address }}
+    ./dist/hpc-judge serve -c {{ hpc_judge_configure }}

@@ -1,0 +1,11 @@
+id: 20fbab01-9519-4dfb-85e6-e82a1b9b2483
+access-key: 1e382ae412b50f6c722786363876c9fe
+listen: :20651
+external-address: 127.0.0.1:20651
+tags: []
+discovery:
+  address:
+    - http://127.0.0.1:20751
+    - http://127.0.0.1:20752
+  access-key: e10adc3949ba59abbe
+  timeout: 5s

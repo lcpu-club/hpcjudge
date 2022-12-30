@@ -1,17 +1,17 @@
 id: 92486a75-9640-4f22-a69f-eef51b16af6d
+tags: []
+listen: :20551
+external-address: 127.0.0.1:20551
 nsq:
   nsqlookupd:
     address:
-      - 127.0.0.1:4160
-    topics:
-      judge: runner:judge:request
-      sandbox: runner:sandbox:request
-    channel: judgers
+      - 127.0.0.1:4161
   nsqd:
     address: 127.0.0.1:4150
-    topics:
-      judge: runner:judge:status
-      sandbox: runner:sandbox:request
+  topics:
+    judge: runner.judge.request
+    report: runner.judge.status
+  channel: judgers
   auth-secret: ""
   concurrent: 4
 minio:
@@ -26,8 +26,9 @@ minio:
   presigned-expiry: 5m
 discovery:
   address:
-    - 127.0.0.1:20751
-    - 127.0.0.1:20752
+    - http://127.0.0.1:20751
+    - http://127.0.0.1:20752
   access-key: e10adc3949ba59abbe
   timeout: 5s
-  inform-type: hpc-judge
+bridge:
+  access-key: 1e382ae412b50f6c722786363876c9fe

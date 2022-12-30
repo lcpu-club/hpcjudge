@@ -2,11 +2,14 @@ package judge
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 
+	"github.com/lcpu-club/hpcjudge/common/consts"
 	"github.com/lcpu-club/hpcjudge/discovery"
 	discoveryProtocol "github.com/lcpu-club/hpcjudge/discovery/protocol"
 	"github.com/lcpu-club/hpcjudge/judge/configure"
+	"github.com/lcpu-club/hpcjudge/judge/message"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/nsqio/go-nsq"
@@ -14,14 +17,13 @@ import (
 )
 
 type Judger struct {
-	id                 uuid.UUID
-	nsqConsumerJudge   *nsq.Consumer
-	nsqConsumerSandbox *nsq.Consumer
-	nsqReport          *nsq.Producer
-	discoveryClient    *discovery.Client
-	discoveryService   *discovery.Service
-	configure          *configure.Configure
-	minio              *minio.Client
+	id               uuid.UUID
+	nsqConsumer      *nsq.Consumer
+	nsqReport        *nsq.Producer
+	discoveryClient  *discovery.Client
+	discoveryService *discovery.Service
+	configure        *configure.Configure
+	minio            *minio.Client
 }
 
 func NewJudger(conf *configure.Configure) (*Judger, error) {
@@ -37,13 +39,18 @@ func NewJudger(conf *configure.Configure) (*Judger, error) {
 func (j *Judger) Run() error {
 	err := j.connectMinIO()
 	if err != nil {
+		log.Println("Connect to MinIO failed")
 		return err
 	}
 	err = j.connectDiscovery()
 	if err != nil {
+		log.Println("Connect to Discovery failed")
 		return err
 	}
 	err = j.connectNSQ()
+	if err != nil {
+		log.Println("Connect to NSQ failed")
+	}
 	return err
 }
 
@@ -57,38 +64,29 @@ func (j *Judger) connectDiscovery() error {
 	s, err := j.discoveryService.Inform(&discoveryProtocol.Service{
 		ID:      j.id,
 		Address: j.configure.ExternalAddress,
-		Type:    j.configure.Discovery.InformType,
-		Tags:    j.configure.Discovery.InformTags,
+		Type:    consts.HpcJudgeDiscoveryType,
+		Tags:    j.configure.Tags,
 	})
 	if err != nil {
 		return err
 	}
 	j.id = s.ID
-	return nil
+	return j.discoveryService.Add()
 }
 
 func (j *Judger) connectNSQ() error {
 	config := nsq.NewConfig()
 	config.AuthSecret = j.configure.Nsq.AuthSecret
 	var err error
-	j.nsqConsumerJudge, err = nsq.NewConsumer(j.configure.Nsq.NsqLookupd.Topics.Judge, j.configure.Nsq.NsqLookupd.Channel, config)
+	j.nsqConsumer, err = nsq.NewConsumer(j.configure.Nsq.Topics.Judge, j.configure.Nsq.Channel, config)
 	if err != nil {
 		return err
 	}
-	err = j.nsqConsumerJudge.ConnectToNSQLookupds(j.configure.Nsq.NsqLookupd.Address)
+	j.nsqConsumer.AddConcurrentHandlers(j, j.configure.Nsq.Concurrent)
+	err = j.nsqConsumer.ConnectToNSQLookupds(j.configure.Nsq.NsqLookupd.Address)
 	if err != nil {
 		return err
 	}
-	j.nsqConsumerJudge.AddConcurrentHandlers(nsq.HandlerFunc(j.HandleMessageJudge), j.configure.Nsq.Concurrent)
-	j.nsqConsumerSandbox, err = nsq.NewConsumer(j.configure.Nsq.NsqLookupd.Topics.Sandbox, j.configure.Nsq.NsqLookupd.Channel, config)
-	if err != nil {
-		return err
-	}
-	err = j.nsqConsumerSandbox.ConnectToNSQLookupds(j.configure.Nsq.NsqLookupd.Address)
-	if err != nil {
-		return err
-	}
-	j.nsqConsumerSandbox.AddConcurrentHandlers(nsq.HandlerFunc(j.HandleMessageSandbox), j.configure.Nsq.Concurrent)
 	j.nsqReport, err = nsq.NewProducer(j.configure.Nsq.Nsqd.Address, config)
 	log.Println("Connected to NSQ Server")
 	return err
@@ -107,10 +105,28 @@ func (j *Judger) connectMinIO() error {
 	return nil
 }
 
-func (j *Judger) HandleMessageJudge(msg *nsq.Message) error {
-	return nil
+func (j *Judger) publishToReport(msg *message.JudgeReportMessage) error {
+	mText, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return j.nsqReport.Publish(j.configure.Nsq.Topics.Report, mText)
 }
 
-func (j *Judger) HandleMessageSandbox(msg *nsq.Message) error {
+func (j *Judger) discoverBridge(tags []string, excludeTags []string) (*discoveryProtocol.Service, error) {
+	return j.discoveryClient.Query(&discoveryProtocol.QueryParameters{
+		Type:        consts.HpcBridgeDiscoveryType,
+		Tags:        tags,
+		ExcludeTags: excludeTags,
+	})
+}
+
+func (j *Judger) HandleMessage(msg *nsq.Message) error {
+	msg.Touch()
+	jMsg := &message.JudgeMessage{}
+	err := json.Unmarshal(msg.Body, jMsg)
+	if err != nil {
+		return err
+	}
 	return nil
 }

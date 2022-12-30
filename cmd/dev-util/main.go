@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/satori/uuid"
 )
@@ -29,6 +30,7 @@ func main() {
 					fmt.Println(err)
 				}
 			}(arg)
+			time.Sleep(500 * time.Millisecond)
 		}
 		wg.Wait()
 	}

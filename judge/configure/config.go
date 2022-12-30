@@ -8,6 +8,8 @@ import (
 
 type Configure struct {
 	ID              uuid.UUID           `yaml:"uuid"`
+	Tags            []string            `yaml:"tags"`
+	Listen          string              `yaml:"listen"`
 	ExternalAddress string              `yaml:"external-address"`
 	Nsq             *NsqConfigure       `yaml:"nsq"`
 	MinIO           *MinIOConfigure     `yaml:"minio"`
@@ -19,27 +21,21 @@ type NsqConfigure struct {
 	NsqLookupd *NsqLookupdConfigure `yaml:"nsqlookupd"`
 	AuthSecret string               `yaml:"auth-secret"`
 	Concurrent int                  `yaml:"concurrent"`
+	Topics     *NsqTopicConfigure   `yaml:"topics"`
+	Channel    string               `yaml:"channel"`
 }
 
 type NsqdConfigure struct {
-	Address string              `yaml:"address"`
-	Topics  *NsqdTopicConfigure `yaml:"topics"`
+	Address string `yaml:"address"`
 }
 
-type NsqdTopicConfigure struct {
-	Judge   string `yaml:"judge"`
-	Sandbox string `yaml:"sandbox"`
+type NsqTopicConfigure struct {
+	Judge  string `yaml:"judge"`
+	Report string `yaml:"report"`
 }
 
 type NsqLookupdConfigure struct {
-	Address []string                  `yaml:"address"`
-	Topics  *NsqLookupdTopicConfigure `yaml:"topics"`
-	Channel string                    `yaml:"channel"`
-}
-
-type NsqLookupdTopicConfigure struct {
-	Judge   string `yaml:"judge"`
-	Sandbox string `yaml:"sandbox"`
+	Address []string `yaml:"address"`
 }
 
 type MinIOConfigure struct {
@@ -61,9 +57,7 @@ type MinIOBucketsConfigure struct {
 }
 
 type DiscoveryConfigure struct {
-	Address    []string      `yaml:"address"`
-	AccessKey  string        `yaml:"access-key"`
-	Timeout    time.Duration `yaml:"timeout"`
-	InformType string        `yaml:"inform-type"`
-	InformTags []string      `yaml:"inform-tags"`
+	Address   []string      `yaml:"address"`
+	AccessKey string        `yaml:"access-key"`
+	Timeout   time.Duration `yaml:"timeout"`
 }
