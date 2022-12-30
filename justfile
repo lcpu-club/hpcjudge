@@ -19,6 +19,9 @@ build-bridge: mkdir-dist
 
 # End Build
 
+run-dependencies:
+    go run github.com/lcpu-club/hpcjudge/cmd/util-multi-run "just minio" "just nsqd" "just nsqlookupd" "just nsqadmin" "just hpc-discovery"
+
 # MinIO Configure
 minio_user := "hpc"
 minio_pass := "hpc@devel"

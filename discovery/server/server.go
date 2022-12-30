@@ -262,7 +262,7 @@ func (s *Server) NotifyPeersServiceMutation(typ OperationType, svc *Service) {
 	wg.Wait()
 }
 
-func (s *Server) Add(service *Service, notifyPeers bool) error {
+func (s *Server) NormalizeService(service *Service) error {
 	service.indexTags()
 	if service.ID == uuid.Nil {
 		qRslt := s.QueryOne(&protocol.QueryParameters{
@@ -274,6 +274,14 @@ func (s *Server) Add(service *Service, notifyPeers bool) error {
 			return protocol.ErrServiceAlreadyExists
 		}
 		service.ID = uuid.NewV4()
+	}
+	return nil
+}
+
+func (s *Server) Add(service *Service, notifyPeers bool) error {
+	err := s.NormalizeService(service)
+	if err != nil {
+		return err
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -657,9 +665,9 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 			}
 		case protocol.RegisterOperationInform:
 			svc = ProtocolServiceToService(m.Data)
-			err = s.Add(svc, true)
+			err = s.NormalizeService(svc)
 			resp.Service = ServiceToProtocolService(svc)
-			if err != nil {
+			if err != nil && err != protocol.ErrServiceAlreadyExists {
 				resp.Success = false
 				resp.Error = err.Error()
 			}
