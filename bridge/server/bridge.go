@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -115,7 +116,6 @@ func (s *Server) HandleFetchObject(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = io.Copy(target, remote.Body)
 	if err != nil {
-		log.Println("ERROR:", err)
 		resp.SetError(err)
 	}
 	s.cs.Respond(w, resp)
@@ -136,6 +136,73 @@ func (s *Server) HandleCalculatePath(w http.ResponseWriter, r *http.Request) {
 		resp.SetError(err)
 	}
 	resp.Path = p
+	s.cs.Respond(w, resp)
+}
+
+func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
+	req := new(api.ExecuteCommandRequest)
+	if !s.cs.ParseRequest(w, r, req) {
+		return
+	}
+	resp := &api.ExecuteCommandResponse{
+		ResponseBase: common.ResponseBase{
+			Success: true,
+		},
+	}
+	wd, err := s.getStoragePath(req.WorkDirectory.Partition, req.WorkDirectory.Path)
+	if err != nil {
+		resp.SetError(err)
+		s.cs.Respond(w, resp)
+		return
+	}
+	cmd := exec.Command(req.Command, req.Arguments...)
+	cmd, err = common.CommandUseUser(cmd, req.User)
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToLookupUser)
+		s.cs.Respond(w, resp)
+		return
+	}
+	cmd.Dir = wd
+	pipeStdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToCreateCommandPipe)
+		s.cs.Respond(w, resp)
+		return
+	}
+	pipeStderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToCreateCommandPipe)
+		s.cs.Respond(w, resp)
+		return
+	}
+	err = cmd.Start()
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToStartCommand)
+		s.cs.Respond(w, resp)
+		return
+	}
+	stdout, err := io.ReadAll(pipeStdout)
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToReadFromPipe)
+		s.cs.Respond(w, resp)
+		return
+	}
+	stderr, err := io.ReadAll(pipeStderr)
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToReadFromPipe)
+		s.cs.Respond(w, resp)
+		return
+	}
+	cmd.Wait()
+	resp.StdOut = string(stdout)
+	resp.StdErr = string(stderr)
+	resp.ExitStatus = cmd.ProcessState.ExitCode()
 	s.cs.Respond(w, resp)
 }
 
