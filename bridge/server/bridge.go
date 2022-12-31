@@ -229,25 +229,38 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 		s.cs.Respond(w, resp)
 		return
 	}
-	stdout, err := io.ReadAll(pipeStdout)
-	if err != nil {
-		log.Println("ERROR:", err)
-		resp.SetError(api.ErrFailedToReadFromPipe)
-		s.cs.Respond(w, resp)
-		return
+	wait := func() {
+		stdout, err := io.ReadAll(pipeStdout)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToReadFromPipe)
+			return
+		}
+		stderr, err := io.ReadAll(pipeStderr)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToReadFromPipe)
+			return
+		}
+		cmd.Wait()
+		resp.StdOut = string(stdout)
+		resp.StdErr = string(stderr)
+		resp.ExitStatus = cmd.ProcessState.ExitCode()
 	}
-	stderr, err := io.ReadAll(pipeStderr)
-	if err != nil {
-		log.Println("ERROR:", err)
-		resp.SetError(api.ErrFailedToReadFromPipe)
+	if !req.Async {
+		wait()
 		s.cs.Respond(w, resp)
-		return
+	} else {
+		go func() {
+			wait()
+			rMsg := &api.ExecuteCommandReport{
+				ExecuteCommandResponse: *resp,
+				ReportData:             req.ReportData,
+			}
+			_ = rMsg
+			// TODO: logic to submit rMsg
+		}()
 	}
-	cmd.Wait()
-	resp.StdOut = string(stdout)
-	resp.StdErr = string(stderr)
-	resp.ExitStatus = cmd.ProcessState.ExitCode()
-	s.cs.Respond(w, resp)
 }
 
 func (s *Server) Start() error {

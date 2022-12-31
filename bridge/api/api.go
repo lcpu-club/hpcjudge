@@ -30,6 +30,8 @@ type ExecuteCommandRequest struct {
 	Arguments     []string         `json:"arguments"`
 	WorkDirectory *PartitionedPath `json:"work-directory"`
 	User          string           `yaml:"user"`
+	Async         bool             `json:"async"`
+	ReportData    interface{}      `json:"report-data"` // Used together with async
 }
 
 type ExecuteCommandResponse struct {
@@ -39,18 +41,16 @@ type ExecuteCommandResponse struct {
 	StdErr     string `json:"stderr"`
 }
 
+type ExecuteCommandReport struct {
+	ExecuteCommandResponse
+	ReportData interface{} `json:"report-data"`
+}
+
 type RemoveFileRequest struct {
 	Path *PartitionedPath `json:"path"`
 }
 
 type RemoveFileResponse struct {
-	common.ResponseBase
-}
-
-type RunJudgeRequest struct {
-}
-
-type RunJudgeResponse struct {
 	common.ResponseBase
 }
 
