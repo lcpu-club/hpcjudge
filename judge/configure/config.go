@@ -14,6 +14,7 @@ type Configure struct {
 	Nsq             *NsqConfigure       `yaml:"nsq"`
 	MinIO           *MinIOConfigure     `yaml:"minio"`
 	Discovery       *DiscoveryConfigure `yaml:"discovery"`
+	Bridge          *BridgeConfigure    `yaml:"bridge"`
 }
 
 type NsqConfigure struct {
@@ -63,4 +64,8 @@ type DiscoveryConfigure struct {
 	Address   []string      `yaml:"address"`
 	AccessKey string        `yaml:"access-key"`
 	Timeout   time.Duration `yaml:"timeout"`
+}
+
+type BridgeConfigure struct {
+	SecretKey string `yaml:"secret-key"`
 }

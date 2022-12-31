@@ -9,3 +9,8 @@ discovery:
     - http://127.0.0.1:20752
   access-key: e10adc3949ba59abbe
   timeout: 5s
+storage-path:
+  user: /home
+  problem: /game/problem
+  solution: /game/solution
+  software: /software

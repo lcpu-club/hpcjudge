@@ -6,7 +6,14 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/lcpu-club/hpcjudge/discovery"
+	discoveryProtocol "github.com/lcpu-club/hpcjudge/discovery/protocol"
 )
+
+type CommonClient interface {
+	DoPostRequest(endpoint string, data interface{}, resp Response) error
+}
 
 type CommonSignedClient struct {
 	hc        *http.Client
@@ -17,14 +24,16 @@ type CommonSignedClient struct {
 
 func NewCommonSignedClient(address string, secretKey []byte, timeout time.Duration) *CommonSignedClient {
 	return &CommonSignedClient{
-		hc:        &http.Client{},
+		hc: &http.Client{
+			Timeout: timeout,
+		},
 		secretKey: secretKey,
 		address:   address,
 		timeout:   timeout,
 	}
 }
 
-func (cc *CommonSignedClient) CreateRequest(method string, endpoint string, body io.Reader) (*http.Request, error) {
+func (cc *CommonSignedClient) createRequest(method string, endpoint string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, cc.address+"/"+endpoint, body)
 	if err != nil {
 		return req, err
@@ -32,12 +41,12 @@ func (cc *CommonSignedClient) CreateRequest(method string, endpoint string, body
 	return req, nil
 }
 
-func (cc *CommonSignedClient) CreatePostRequestWithJSON(endpoint string, data interface{}) (*http.Request, error) {
+func (cc *CommonSignedClient) createPostRequestWithJSON(endpoint string, data interface{}) (*http.Request, error) {
 	j, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	req, err := cc.CreateRequest("POST", endpoint, bytes.NewReader(j))
+	req, err := cc.createRequest("POST", endpoint, bytes.NewReader(j))
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +59,7 @@ func (cc *CommonSignedClient) CreatePostRequestWithJSON(endpoint string, data in
 }
 
 func (cc *CommonSignedClient) DoPostRequest(endpoint string, data interface{}, resp Response) error {
-	req, err := cc.CreatePostRequestWithJSON(endpoint, data)
+	req, err := cc.createPostRequestWithJSON(endpoint, data)
 	if err != nil {
 		return err
 	}
@@ -67,4 +76,40 @@ func (cc *CommonSignedClient) DoPostRequest(endpoint string, data interface{}, r
 		return err
 	}
 	return nil
+}
+
+type CommonDiscoveredSignedClient struct {
+	hc              *http.Client
+	discoveryClient *discovery.Client
+	condition       *discoveryProtocol.QueryParameters
+	secretKey       []byte
+	timeout         time.Duration
+}
+
+func NewCommonDiscoveredSignedClient(dc *discovery.Client, cond *discoveryProtocol.QueryParameters, secretKey []byte, timeout time.Duration) *CommonDiscoveredSignedClient {
+	hc := &http.Client{
+		Timeout: timeout,
+	}
+	cc := &CommonDiscoveredSignedClient{
+		hc:              hc,
+		discoveryClient: dc,
+		condition:       cond,
+		secretKey:       secretKey,
+		timeout:         timeout,
+	}
+	return cc
+}
+
+func (cc *CommonDiscoveredSignedClient) DoPostRequest(endpoint string, data interface{}, resp Response) error {
+	svc, err := cc.discoveryClient.Query(cc.condition)
+	if err != nil {
+		return err
+	}
+	csc := &CommonSignedClient{
+		hc:        cc.hc,
+		address:   svc.Address,
+		secretKey: cc.secretKey,
+		timeout:   cc.timeout,
+	}
+	return csc.DoPostRequest(endpoint, data, resp)
 }

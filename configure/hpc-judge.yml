@@ -34,4 +34,4 @@ discovery:
   access-key: e10adc3949ba59abbe
   timeout: 5s
 bridge:
-  access-key: 1e382ae412b50f6c722786363876c9fe
+  secret-key: 1e382ae412b50f6c722786363876c9fe
