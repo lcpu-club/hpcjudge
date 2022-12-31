@@ -7,6 +7,7 @@
     "consts",
     "GSVDWH",
     "Hasher",
+    "hpcgame",
     "hpcjudge",
     "lookupd",
     "Lookupds",
@@ -17,6 +18,7 @@
     "nsqlookupd",
     "Rcvd",
     "Shne",
-    "urfave"
+    "urfave",
+    "utilitycmd"
   ]
 }
