@@ -159,12 +159,12 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	}
 	if msg.Attempts > uint16(j.configure.Nsq.MaxAttempts) {
 		err := j.publishToReport(&message.JudgeReportMessage{
-			SubmissionID: jMsg.SubmissionID,
-			Success:      false,
-			Done:         true,
-			Error:        message.ErrMaxAttemptsExceeded.Error(),
-			Score:        0,
-			Message:      "Internal Error: " + message.ErrMaxAttemptsExceeded.Error(),
+			SolutionID: jMsg.SolutionID,
+			Success:    false,
+			Done:       true,
+			Error:      message.ErrMaxAttemptsExceeded.Error(),
+			Score:      0,
+			Message:    "Internal Error: " + message.ErrMaxAttemptsExceeded.Error(),
 		})
 		if err != nil {
 			log.Println("ERROR:", err)
