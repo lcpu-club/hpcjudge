@@ -13,6 +13,7 @@ type Configure struct {
 	ExternalAddress string              `yaml:"external-address"`
 	SecretKey       []byte              `yaml:"secret-key"`
 	Discovery       *DiscoveryConfigure `yaml:"discovery"`
+	StoragePath     map[string]string   `yaml:"storage-path"`
 }
 
 type DiscoveryConfigure struct {

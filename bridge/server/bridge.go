@@ -2,14 +2,17 @@ package server
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding"
 	"fmt"
-	"hash"
+	"io"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/lcpu-club/hpcjudge/bridge/api"
 	"github.com/lcpu-club/hpcjudge/bridge/configure"
+	"github.com/lcpu-club/hpcjudge/common"
 	"github.com/lcpu-club/hpcjudge/common/consts"
 	"github.com/lcpu-club/hpcjudge/discovery"
 	discoveryProtocol "github.com/lcpu-club/hpcjudge/discovery/protocol"
@@ -21,8 +24,7 @@ type Server struct {
 	discoveryService *discovery.Service
 	discovery        *discovery.Client
 	configure        *configure.Configure
-	mux              *http.ServeMux
-	signatureHasher  func() hash.Hash
+	cs               *common.CommonServer
 }
 
 func NewServer(conf *configure.Configure) (*Server, error) {
@@ -55,27 +57,86 @@ func (s *Server) Init(conf *configure.Configure) error {
 		return err
 	}
 	s.id = rSvc.ID
-	s.signatureHasher = func() hash.Hash {
-		return hmac.New(sha256.New, s.configure.SecretKey)
+	err = s.discoveryService.Add()
+	if err != nil {
+		return err
 	}
+	s.cs = common.NewCommonServer(s.configure.Listen, s.configure.SecretKey)
+	s.registerRoutes(s.cs.GetMux())
 	return nil
 }
 
-func (s *Server) validateMessageSignature(msg []byte, signature string) bool {
-	hmacHasher := s.signatureHasher()
-	_, err := hmacHasher.Write(msg)
-	if err != nil {
-		panic(err)
-	}
-	txt, err := hmacHasher.(encoding.TextMarshaler).MarshalText()
-	if err != nil {
-		panic(err)
-	}
-	return string(txt) == signature
+func (s *Server) registerRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/fetch-object", s.HandleFetchObject)
+	mux.HandleFunc("/calculate-path", s.HandleCalculatePath)
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+func (s *Server) getStoragePath(partition string, path string) (string, error) {
+	partPath, ok := s.configure.StoragePath[partition]
+	if !ok {
+		return "", api.ErrPartitionNotFound
+	}
+	p := filepath.Join(partPath, path)
+	if !strings.HasPrefix(p, partPath) {
+		return "", api.ErrPathOverflowsPartitionPath
+	}
+	return p, nil
+}
+
+func (s *Server) HandleFetchObject(w http.ResponseWriter, r *http.Request) {
+	req := new(api.FetchObjectRequest)
+	if !s.cs.ParseRequest(w, r, req) {
+		return
+	}
+	resp := &api.FetchObjectResponse{
+		ResponseBase: common.ResponseBase{
+			Success: true,
+		},
+	}
+	targetPath, err := s.getStoragePath(req.Path.Partition, req.Path.Path)
+	if err != nil {
+		resp.SetError(err)
+		s.cs.Respond(w, resp)
+		return
+	}
+	target, err := os.Create(targetPath)
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFileCreationError)
+		s.cs.Respond(w, resp)
+		return
+	}
+	remote, err := http.Get(req.ObjectURL)
+	if err != nil || remote.StatusCode != 200 {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToFetch)
+		s.cs.Respond(w, resp)
+		return
+	}
+	_, err = io.Copy(target, remote.Body)
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(err)
+	}
+	s.cs.Respond(w, resp)
+}
+
+func (s *Server) HandleCalculatePath(w http.ResponseWriter, r *http.Request) {
+	req := new(api.CalculatePathRequest)
+	if !s.cs.ParseRequest(w, r, req) {
+		return
+	}
+	resp := &api.CalculatePathResponse{
+		ResponseBase: common.ResponseBase{
+			Success: true,
+		},
+	}
+	p, err := s.getStoragePath(req.Path.Partition, req.Path.Path)
+	if err != nil {
+		resp.SetError(err)
+	}
+	resp.Path = p
+	s.cs.Respond(w, resp)
 }
 
 func (s *Server) Start() error {
@@ -83,8 +144,7 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	err = http.ListenAndServe(s.configure.Listen, s)
-	return err
+	return s.cs.Start()
 }
 
 func (s *Server) Suspend() error {
