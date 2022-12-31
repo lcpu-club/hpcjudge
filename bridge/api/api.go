@@ -38,3 +38,26 @@ type ExecuteCommandResponse struct {
 	StdOut     string `json:"stdout"`
 	StdErr     string `json:"stderr"`
 }
+
+type RemoveFileRequest struct {
+	Path *PartitionedPath `json:"path"`
+}
+
+type RemoveFileResponse struct {
+	common.ResponseBase
+}
+
+type RunJudgeRequest struct {
+}
+
+type RunJudgeResponse struct {
+	common.ResponseBase
+}
+
+type UploadFileRequest struct {
+	Path *PartitionedPath `json:"path"`
+}
+
+type UploadFileResponse struct {
+	common.ResponseBase
+}

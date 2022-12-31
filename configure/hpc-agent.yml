@@ -1,0 +1,13 @@
+socket: /var/run/hpc-agent.socket
+utilitycmd:
+  path: /usr/bin/hpcgame
+  secret-key: a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3
+bridge:
+  address:
+    - http://127.0.0.1:20651
+    - http://login01.hpc:20651
+storage-path:
+  user: /home
+  problem: /game/problem
+  solution: /game/solution
+  software: /software

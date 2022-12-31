@@ -139,6 +139,50 @@ func (s *Server) HandleCalculatePath(w http.ResponseWriter, r *http.Request) {
 	s.cs.Respond(w, resp)
 }
 
+func (s *Server) HandleRemoveFile(w http.ResponseWriter, r *http.Request) {
+	req := new(api.RemoveFileRequest)
+	if !s.cs.ParseRequest(w, r, req) {
+		return
+	}
+	resp := &api.RemoveFileResponse{
+		ResponseBase: common.ResponseBase{
+			Success: true,
+		},
+	}
+	path, err := s.getStoragePath(req.Path.Partition, req.Path.Path)
+	if err != nil {
+		resp.SetError(err)
+		s.cs.Respond(w, resp)
+		return
+	}
+	fi, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			resp.SetError(api.ErrFileNotFound)
+			s.cs.Respond(w, resp)
+			return
+		}
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToStatFile)
+		s.cs.Respond(w, resp)
+		return
+	}
+	if fi.IsDir() {
+		err := os.RemoveAll(path)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToRemove)
+		}
+	} else {
+		err := os.Remove(path)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToRemove)
+		}
+	}
+	s.cs.Respond(w, resp)
+}
+
 func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 	req := new(api.ExecuteCommandRequest)
 	if !s.cs.ParseRequest(w, r, req) {
