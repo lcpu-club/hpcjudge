@@ -6,8 +6,6 @@ import (
 	"io"
 	"net/http"
 	"time"
-
-	"github.com/lcpu-club/hpcjudge/discovery/protocol"
 )
 
 type CommonSignedClient struct {
@@ -39,10 +37,19 @@ func (cc *CommonSignedClient) CreatePostRequestWithJSON(endpoint string, data in
 	if err != nil {
 		return nil, err
 	}
-	return cc.CreateRequest("POST", endpoint, bytes.NewReader(j))
+	req, err := cc.CreateRequest("POST", endpoint, bytes.NewReader(j))
+	if err != nil {
+		return nil, err
+	}
+	signature, err := SignMessage(j, cc.secretKey)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("X-Signature", string(signature))
+	return req, nil
 }
 
-func (cc *CommonSignedClient) DoPostRequest(endpoint string, data interface{}, resp protocol.Response) error {
+func (cc *CommonSignedClient) DoPostRequest(endpoint string, data interface{}, resp Response) error {
 	req, err := cc.CreatePostRequestWithJSON(endpoint, data)
 	if err != nil {
 		return err

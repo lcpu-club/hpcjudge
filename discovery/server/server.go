@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -813,7 +814,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if accessKey == "" {
 		accessKey = r.URL.Query().Get("access-key")
 	}
-	if s.accessKey != "" && accessKey != s.accessKey {
+	if s.accessKey != "" && subtle.ConstantTimeCompare([]byte(accessKey), []byte(s.accessKey)) == 0 {
 		s.error403(w)
 		return
 	}
