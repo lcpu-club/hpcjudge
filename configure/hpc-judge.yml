@@ -24,11 +24,20 @@ minio:
     problem: problems
     solution: solutions
   presigned-expiry: 5m
+redis:
+  endpoint: 127.0.0.1:6379
+  password: ""
+  keep-alive: 1m
+  database: 0
 discovery:
   address:
     - http://127.0.0.1:20751
     - http://127.0.0.1:20752
   access-key: e10adc3949ba59abbe
   timeout: 5s
+  prefix: judge-
+  expire:
+    report: 10s
+    judge: 12h
 bridge:
   secret-key: 1e382ae412b50f6c722786363876c9fe

@@ -7,14 +7,12 @@ import (
 )
 
 type Configure struct {
-	ID              uuid.UUID           `yaml:"uuid"`
-	Tags            []string            `yaml:"tags"`
-	Listen          string              `yaml:"listen"`
-	ExternalAddress string              `yaml:"external-address"`
-	Nsq             *NsqConfigure       `yaml:"nsq"`
-	MinIO           *MinIOConfigure     `yaml:"minio"`
-	Discovery       *DiscoveryConfigure `yaml:"discovery"`
-	Bridge          *BridgeConfigure    `yaml:"bridge"`
+	ID        uuid.UUID           `yaml:"id"`
+	Nsq       *NsqConfigure       `yaml:"nsq"`
+	MinIO     *MinIOConfigure     `yaml:"minio"`
+	Redis     *RedisConfigure     `yaml:"redis"`
+	Discovery *DiscoveryConfigure `yaml:"discovery"`
+	Bridge    *BridgeConfigure    `yaml:"bridge"`
 }
 
 type NsqConfigure struct {
@@ -58,6 +56,20 @@ type MinIOCredentialsConfigure struct {
 type MinIOBucketsConfigure struct {
 	Problem  string `yaml:"problem"`
 	Solution string `yaml:"solution"`
+}
+
+type RedisConfigure struct {
+	Address   string                `yaml:"address"`
+	Password  string                `yaml:"password"`
+	KeepAlive time.Duration         `yaml:"keep-alive"`
+	Database  int                   `yaml:"database"`
+	Prefix    string                `yaml:"prefix"`
+	Expire    *RedisExpireConfigure `yaml:"expire"`
+}
+
+type RedisExpireConfigure struct {
+	Report time.Duration `yaml:"report"`
+	Judge  time.Duration `yaml:"judge"`
 }
 
 type DiscoveryConfigure struct {

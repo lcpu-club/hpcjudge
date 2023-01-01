@@ -56,6 +56,15 @@ nsqd:
 nsqadmin:
     nsqadmin -http-address={{ nsqadmin_http }} -lookupd-http-address={{ nsqlookupd_http_address }}
 
+# redis configure
+redis_work_dir := "./dev-temp/redis/"
+redis_port := "6379"
+# end redis configure
+
+redis:
+    cd {{ redis_work_dir }}
+    redis-server --port {{ redis_port }}
+
 # hpc-discovery configure
 hpc_discovery_access_key := "e10adc3949ba59abbe"
 hpc_discovery_listen := ":20751"
