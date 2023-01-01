@@ -28,6 +28,8 @@
     "Shne",
     "spawncmd",
     "urfave",
-    "utilitycmd"
+    "utilitycmd",
+    "gomodule",
+    "redigo"
   ]
 }
