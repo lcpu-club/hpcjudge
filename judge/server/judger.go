@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	bridgeApi "github.com/lcpu-club/hpcjudge/bridge/api"
 	"github.com/lcpu-club/hpcjudge/common/consts"
 	"github.com/lcpu-club/hpcjudge/common/models"
 	"github.com/lcpu-club/hpcjudge/discovery"
@@ -132,83 +133,138 @@ func (j *Judger) connectRedis() error {
 }
 
 func (j *Judger) listenMinIOEvent() {
-	ch := j.minio.ListenBucketNotification(
+	chResults := j.minio.ListenBucketNotification(
 		context.Background(),
 		j.configure.MinIO.Buckets.Solution, "", "result.json", []string{
 			"s3:ObjectCreated:*",
 		},
 	)
 	go func() {
-		for n := range ch {
+		for n := range chResults {
 			if n.Err != nil {
 				log.Println("ERROR:", n.Err)
-				for _, record := range n.Records {
-					k := record.S3.Object.Key
-					v := record.S3.Object.ETag
-					id, err := j.resultObjectKeyToSolutionID(k)
-					if err != nil {
-						continue
-					}
-					_, _ = v, id
-					exists, err := j.checkIfRequestExists(id+v, j.configure.Redis.Expire.Report)
+				continue
+			}
+			for _, record := range n.Records {
+				k := record.S3.Object.Key
+				v := record.S3.Object.ETag
+				id, err := j.resultObjectKeyToSolutionID(k, "result.json")
+				if err != nil {
+					continue
+				}
+				exists, err := j.checkIfRequestExists(id+v, j.configure.Redis.Expire.Report)
+				if err != nil {
+					log.Println("ERROR:", err)
+					continue
+				}
+				if exists {
+					continue
+				}
+				obj, err := j.minio.GetObject(
+					context.Background(),
+					j.configure.MinIO.Buckets.Solution,
+					k,
+					minio.GetObjectOptions{
+						VersionID: record.S3.Object.VersionID,
+					},
+				)
+				if err != nil {
+					log.Println("ERROR:", err)
+					err := j.setRequestNotExist(id + v)
 					if err != nil {
 						log.Println("ERROR:", err)
-						continue
 					}
-					if !exists {
-						obj, err := j.minio.GetObject(
-							context.Background(),
-							j.configure.MinIO.Buckets.Solution,
-							k,
-							minio.GetObjectOptions{
-								VersionID: record.S3.Object.VersionID,
-							},
-						)
-						if err != nil {
-							log.Println("ERROR:", err)
-							err := j.setRequestNotExist(id + v)
-							if err != nil {
-								log.Println("ERROR:", err)
-							}
-							continue
-						}
-						rsltJSON, err := io.ReadAll(obj)
-						if err != nil {
-							log.Println("ERROR:", err)
-							continue
-						}
-						r := new(models.JudgeResult)
-						err = json.Unmarshal(rsltJSON, r)
-						if err != nil {
-							log.Println("ERROR:", err)
-							continue
-						}
-						resp := &message.JudgeReportMessage{
-							SolutionID: id,
-							Success:    true,
-							Done:       r.Done,
-							Score:      r.Score,
-							Message:    r.Message,
-							Timestamp:  time.Now().UnixMicro(),
-						}
-						err = j.publishToReport(resp)
-						if err != nil {
-							log.Println("ERROR:", err)
-						}
-					}
+					continue
 				}
+				rsltJSON, err := io.ReadAll(obj)
+				if err != nil {
+					log.Println("ERROR:", err)
+					continue
+				}
+				r := new(models.JudgeResult)
+				err = json.Unmarshal(rsltJSON, r)
+				if err != nil {
+					log.Println("ERROR:", err)
+					continue
+				}
+				resp := &message.JudgeReportMessage{
+					SolutionID: id,
+					Success:    true,
+					Done:       r.Done,
+					Score:      r.Score,
+					Message:    r.Message,
+					Timestamp:  time.Now().UnixMicro(),
+				}
+				err = j.publishToReport(resp)
+				if err != nil {
+					log.Println("ERROR:", err)
+				}
+			}
+		}
+	}()
+	chRunCommandReports := j.minio.ListenBucketNotification(
+		context.Background(),
+		j.configure.MinIO.Buckets.Solution, "", "run-command-report.json", []string{
+			"s3:ObjectCreated:*",
+		},
+	)
+	go func() {
+		for n := range chRunCommandReports {
+			if n.Err != nil {
+				log.Println("ERROR:", n.Err)
+				continue
+			}
+			for _, record := range n.Records {
+				k := record.S3.Object.Key
+				v := record.S3.Object.ETag
+				id, err := j.resultObjectKeyToSolutionID(k, "run-command-report.json")
+				if err != nil {
+					continue
+				}
+				exists, err := j.checkIfRequestExists(id+v, j.configure.Redis.Expire.Report)
+				if exists {
+					continue
+				}
+				obj, err := j.minio.GetObject(
+					context.Background(),
+					j.configure.MinIO.Buckets.Solution,
+					k,
+					minio.GetObjectOptions{
+						VersionID: record.S3.Object.VersionID,
+					},
+				)
+				if err != nil {
+					log.Println("ERROR:", err)
+					err := j.setRequestNotExist(id + v)
+					if err != nil {
+						log.Println("ERROR:", err)
+					}
+					continue
+				}
+				rsltJSON, err := io.ReadAll(obj)
+				if err != nil {
+					log.Println("ERROR:", err)
+					continue
+				}
+				r := new(bridgeApi.ExecuteCommandResponse)
+				err = json.Unmarshal(rsltJSON, r)
+				if err != nil {
+					log.Println("ERROR:", err)
+					continue
+				}
+				// TODO: implement report
 			}
 		}
 	}()
 }
 
-func (j *Judger) resultObjectKeyToSolutionID(k string) (string, error) {
+func (j *Judger) resultObjectKeyToSolutionID(k string, suffix string) (string, error) {
 	key := j.configure.Redis.Prefix + k
 	id, res, found := strings.Cut(key, "/")
 	if !found {
 		return "", fmt.Errorf("/ not found")
 	}
-	if res != "result.json" {
+	if res != suffix {
 		return "", fmt.Errorf("not result.json")
 	}
 	return id, nil
