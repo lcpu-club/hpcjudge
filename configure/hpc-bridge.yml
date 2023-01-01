@@ -21,6 +21,7 @@ minio:
     solution: solutions
   presigned-expiry: 5m
 storage-path:
+  root: /
   user: /home
   problem: /data/problem
   solution: /data/solution

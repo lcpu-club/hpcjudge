@@ -29,9 +29,9 @@ type ExecuteCommandRequest struct {
 	Command       string           `json:"command"`
 	Arguments     []string         `json:"arguments"`
 	WorkDirectory *PartitionedPath `json:"work-directory"`
-	User          string           `yaml:"user"`
+	User          string           `json:"user"`
 	Async         bool             `json:"async"`
-	ReportData    interface{}      `json:"report-data"` // Used together with async
+	ReportURL     string           `json:"report-url"` // Used with async
 }
 
 type ExecuteCommandResponse struct {
@@ -39,11 +39,6 @@ type ExecuteCommandResponse struct {
 	ExitStatus int    `json:"exit-status"`
 	StdOut     string `json:"stdout"`
 	StdErr     string `json:"stderr"`
-}
-
-type ExecuteCommandReport struct {
-	ExecuteCommandResponse
-	ReportData interface{} `json:"report-data"`
 }
 
 type RemoveFileRequest struct {
@@ -55,7 +50,9 @@ type RemoveFileResponse struct {
 }
 
 type UploadFileRequest struct {
-	Path *PartitionedPath `json:"path"`
+	Path   *PartitionedPath `json:"path"`
+	Bucket string           `json:"bucket"`
+	Object string           `json:"object"`
 }
 
 type UploadFileResponse struct {

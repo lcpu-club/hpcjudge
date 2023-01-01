@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -90,6 +92,9 @@ func (s *Server) Init(conf *configure.Configure) error {
 func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/fetch-object", s.HandleFetchObject)
 	mux.HandleFunc("/calculate-path", s.HandleCalculatePath)
+	mux.HandleFunc("/remove-file", s.HandleRemoveFile)
+	mux.HandleFunc("/upload-file", s.HandleUploadFile)
+	mux.HandleFunc("/execute-command", s.HandleExecuteCommand)
 }
 
 func (s *Server) getStoragePath(partition string, path string) (string, error) {
@@ -269,18 +274,56 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	if !req.Async {
 		wait()
-		s.cs.Respond(w, resp)
 	} else {
 		go func() {
 			wait()
-			rMsg := &api.ExecuteCommandReport{
-				ExecuteCommandResponse: *resp,
-				ReportData:             req.ReportData,
+			if req.ReportURL != "" {
+				b, err := json.Marshal(resp)
+				if err != nil {
+					log.Println("ERROR:", err)
+					return
+				}
+				req, err := http.NewRequest("PUT", req.ReportURL, bytes.NewReader(b))
+				if err != nil {
+					log.Println("ERROR:", err)
+					return
+				}
+				client := &http.Client{}
+				_, err = client.Do(req)
+				if err != nil {
+					log.Println("ERROR:", err)
+					return
+				}
 			}
-			_ = rMsg
-			// TODO: logic to submit rMsg
 		}()
 	}
+	s.cs.Respond(w, resp)
+}
+
+func (s *Server) HandleUploadFile(w http.ResponseWriter, r *http.Request) {
+	req := new(api.UploadFileRequest)
+	if !s.cs.ParseRequest(w, r, req) {
+		return
+	}
+	resp := &api.UploadFileResponse{
+		ResponseBase: common.ResponseBase{
+			Success: true,
+		},
+	}
+	path, err := s.getStoragePath(req.Path.Partition, req.Path.Path)
+	if err != nil {
+		resp.SetError(err)
+		s.cs.Respond(w, resp)
+		return
+	}
+	_, err = s.minio.FPutObject(context.Background(), req.Bucket, req.Object, path, minio.PutObjectOptions{})
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrUploadFileError)
+		s.cs.Respond(w, resp)
+		return
+	}
+	s.cs.Respond(w, resp)
 }
 
 func (s *Server) Start() error {
