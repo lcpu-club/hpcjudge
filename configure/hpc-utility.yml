@@ -1,0 +1,11 @@
+bridge:
+  address:
+    - http://127.0.0.1:20651
+    - http://login01.hpc:20651
+  secret-key: 1e382ae412b50f6c722786363876c9fe
+storage-path:
+  user: /home
+  problem: /data/problem
+  solution: /data/solution
+  status: /data/status
+  software: /software
