@@ -132,15 +132,15 @@ type PeerRequest struct {
 	ID        uuid.UUID     `json:"id"`
 	Address   string        `json:"address"`
 	Operation OperationType `json:"operation"`
-	Delta     *Service      `json:"delta"`
+	Delta     *Service      `json:"delta,omitempty"`
 }
 
 type PeerResponse struct {
 	ID       uuid.UUID  `json:"id"`
 	Success  bool       `json:"success"`
-	Error    string     `json:"error"`
-	Peers    []string   `json:"peers"`
-	Services []*Service `json:"services"`
+	Error    string     `json:"error,omitempty"`
+	Peers    []string   `json:"peers,omitempty"`
+	Services []*Service `json:"services,omitempty"`
 }
 
 func (s *Server) selectFromServiceSlice(a []*Service) *Service {

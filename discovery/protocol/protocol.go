@@ -14,16 +14,16 @@ type Service struct {
 }
 
 type QueryParameters struct {
-	ID          uuid.UUID `json:"id"`
-	Address     string    `json:"address"`
-	Type        string    `json:"type"`
-	Tags        []string  `json:"tags"`
-	ExcludeTags []string  `json:"exclude-tags"`
+	ID          uuid.UUID `json:"id,omitempty"`
+	Address     string    `json:"address,omitempty"`
+	Type        string    `json:"type,omitempty"`
+	Tags        []string  `json:"tags,omitempty"`
+	ExcludeTags []string  `json:"exclude-tags,omitempty"`
 }
 
 type ResponseBase struct {
 	Success bool   `json:"success"`
-	Error   string `json:"error"`
+	Error   string `json:"error,omitempty"`
 }
 
 func (rb *ResponseBase) IsSuccess() bool {
