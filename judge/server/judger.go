@@ -253,6 +253,10 @@ func (j *Judger) discoverBridge(tags []string, excludeTags []string) (*discovery
 }
 
 func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
+	exists, err := j.checkIfRequestExists(msg.SolutionID, j.configure.Redis.Expire.Judge)
+	if exists {
+		return err
+	}
 	probMeta, err := problem.GetProblemMeta(context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, msg.ProblemID)
 	// TODO: implement judge
 	if err != nil {
