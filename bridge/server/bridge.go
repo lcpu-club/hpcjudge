@@ -17,6 +17,8 @@ import (
 	"github.com/lcpu-club/hpcjudge/common/consts"
 	"github.com/lcpu-club/hpcjudge/discovery"
 	discoveryProtocol "github.com/lcpu-club/hpcjudge/discovery/protocol"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/satori/uuid"
 )
 
@@ -26,6 +28,7 @@ type Server struct {
 	discovery        *discovery.Client
 	configure        *configure.Configure
 	cs               *common.CommonServer
+	minio            *minio.Client
 }
 
 func NewServer(conf *configure.Configure) (*Server, error) {
@@ -34,6 +37,19 @@ func NewServer(conf *configure.Configure) (*Server, error) {
 }
 
 var ErrNilConfigure = fmt.Errorf("nil configure")
+
+func (s *Server) connectMinIO() error {
+	var err error
+	s.minio, err = minio.New(s.configure.MinIO.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(s.configure.MinIO.Credentials.AccessKey, s.configure.MinIO.Credentials.SecretKey, ""),
+		Secure: s.configure.MinIO.SSL,
+	})
+	if err != nil {
+		return err
+	}
+	log.Println("Connected to MinIO Server")
+	return nil
+}
 
 func (s *Server) Init(conf *configure.Configure) error {
 	if conf != nil {
@@ -45,6 +61,10 @@ func (s *Server) Init(conf *configure.Configure) error {
 	s.id = uuid.UUID(s.configure.ID)
 	if s.configure.ID == uuid.Nil {
 		s.id = uuid.NewV4()
+	}
+	err := s.connectMinIO()
+	if err != nil {
+		return err
 	}
 	s.discoveryService = discovery.NewService(context.Background(), s.configure.Discovery.Address, s.configure.Discovery.AccessKey)
 	s.discovery = discovery.NewClient(s.configure.Discovery.Address, s.configure.Discovery.AccessKey, s.configure.Discovery.Timeout)

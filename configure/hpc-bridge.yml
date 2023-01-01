@@ -10,6 +10,16 @@ discovery:
     - http://127.0.0.1:20752
   access-key: e10adc3949ba59abbe
   timeout: 5s
+minio:
+  endpoint: 127.0.0.1:9000
+  credentials:
+    access-key: 4B7UgT1JIiXKfDkq
+    secret-key: 3UCdtmShneM6C7BVImGSVDWH8D4ANZKW
+  ssl: false
+  buckets:
+    problem: problems
+    solution: solutions
+  presigned-expiry: 5m
 storage-path:
   user: /home
   problem: /data/problem

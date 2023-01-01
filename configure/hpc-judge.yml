@@ -1,7 +1,4 @@
 id: 92486a75-9640-4f22-a69f-eef51b16af6d
-tags: []
-listen: :20551
-external-address: http://127.0.0.1:20551
 nsq:
   nsqlookupd:
     address:
