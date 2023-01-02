@@ -291,7 +291,7 @@ func (j *Judger) checkIfRequestExists(k string, expire time.Duration) (bool, err
 }
 
 func (j *Judger) setRequestNotExist(key string) error {
-	_, err := j.redisConn.Do("DEL", key)
+	_, err := j.redisConn.Do("DEL", j.configure.Redis.Prefix+key)
 	return err
 }
 
