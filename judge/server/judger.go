@@ -255,7 +255,25 @@ func (j *Judger) listenMinIOEvent() {
 					log.Println("ERROR:", err)
 					continue
 				}
-				// TODO: implement report
+				resp := &message.JudgeReportMessage{
+					SolutionID: id,
+					Success:    true,
+				}
+				if (!r.Success) || r.ExitStatus != 0 {
+					resp.Success = false
+					if !r.Success {
+						resp.Error = r.Error
+					} else if r.ExitStatus != 0 {
+						resp.Error = r.StdErr
+						if r.StdErr == "" {
+							resp.Error = r.StdOut
+						}
+					}
+					err = j.publishToReport(resp)
+					if err != nil {
+						log.Println("ERROR:", err)
+					}
+				}
 			}
 		}
 	}()
