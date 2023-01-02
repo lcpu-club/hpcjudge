@@ -10,4 +10,7 @@ const (
 	JudgeReportFile      = "result.json"
 )
 
-const SolutionFileName = "solution.dat"
+const (
+	OSSSolutionFileName = "data"
+	SolutionFileName    = "solution.dat"
+)

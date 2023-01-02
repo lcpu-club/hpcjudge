@@ -1,4 +1,5 @@
 id: 92486a75-9640-4f22-a69f-eef51b16af6d
+spawn-cmd: /usr/bin/hpc-spawn
 nsq:
   nsqlookupd:
     address:
@@ -41,3 +42,4 @@ discovery:
     judge: 12h
 bridge:
   secret-key: 1e382ae412b50f6c722786363876c9fe
+  timeout: 10m

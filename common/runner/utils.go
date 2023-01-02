@@ -109,3 +109,11 @@ func WriteStatus(
 	}
 	return os.Chown(path, 0, 0)
 }
+
+func ClearStatus(storagePath map[string]string) error {
+	path, err := getStatusFileName(storagePath)
+	if err != nil {
+		return err
+	}
+	return os.Remove(path)
+}

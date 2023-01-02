@@ -71,6 +71,7 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		cmd = exec.Command(tmpPath)
 	}
 	err := runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1)
+	defer runner.ClearStatus(c.configure.StoragePath)
 	if err != nil {
 		log.Println("ERROR:", err)
 		return err

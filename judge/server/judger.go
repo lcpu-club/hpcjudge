@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/lcpu-club/hpcjudge/bridge"
 	bridgeApi "github.com/lcpu-club/hpcjudge/bridge/api"
+	"github.com/lcpu-club/hpcjudge/common"
 	"github.com/lcpu-club/hpcjudge/common/consts"
 	"github.com/lcpu-club/hpcjudge/common/models"
 	"github.com/lcpu-club/hpcjudge/discovery"
@@ -18,6 +22,7 @@ import (
 	"github.com/lcpu-club/hpcjudge/judge/configure"
 	"github.com/lcpu-club/hpcjudge/judge/message"
 	"github.com/lcpu-club/hpcjudge/judge/problem"
+	spawnModels "github.com/lcpu-club/hpcjudge/spawncmd/models"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/nsqio/go-nsq"
@@ -334,8 +339,9 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	if exists {
 		return err
 	}
-	probMeta, err := problem.GetProblemMeta(context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, msg.ProblemID)
-	// TODO: implement judge
+	probMeta, err := problem.GetProblemMeta(
+		context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, msg.ProblemID,
+	)
 	if err != nil {
 		return err
 	}
@@ -344,6 +350,62 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		return err
 	}
 	_ = bridgeSvc
+	cc := common.NewCommonSignedClient(bridgeSvc.Address, j.configure.Bridge.SecretKey, j.configure.Bridge.Timeout)
+	bc := bridge.NewClient(cc)
+	url, err := j.minio.PresignedGetObject(
+		context.Background(), j.configure.MinIO.Buckets.Solution,
+		filepath.Join(msg.SolutionID, consts.OSSSolutionFileName),
+		j.configure.MinIO.PresignedExpiry,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	err = bc.FetchObject(
+		url.String(), "solution", filepath.Join(msg.SolutionID, consts.SolutionFileName), msg.Username, os.FileMode(0600),
+	)
+	defer bc.RemoveFile("solution", filepath.Join(msg.SolutionID, consts.SolutionFileName))
+	if err != nil {
+		return err
+	}
+	runData := &spawnModels.RunJudgeScriptData{
+		ProblemID:  msg.ProblemID,
+		SolutionID: msg.SolutionID,
+		Username:   msg.Username,
+		ResourceControl: &spawnModels.ResourceControl{
+			Memory: probMeta.Environment.ScriptLimits.Memory,
+			CPU:    probMeta.Environment.ScriptLimits.CPU,
+		},
+		Command: probMeta.Entrance.Command,
+		Script:  probMeta.Entrance.Script,
+	}
+	runArgs, err := json.Marshal(runData)
+	if err != nil {
+		return err
+	}
+	reportURL, err := j.minio.PresignedPutObject(
+		context.Background(),
+		j.configure.MinIO.Buckets.Solution,
+		consts.RunCommandReportFile,
+		j.configure.MinIO.PresignedExpiry,
+	)
+	if err != nil {
+		return err
+	}
+	err = bc.ExecuteCommandAsync(
+		j.configure.SpawnCmd,
+		[]string{
+			"-d",
+			string(runArgs),
+		},
+		"home",
+		msg.Username,
+		msg.Username,
+		reportURL.String(),
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

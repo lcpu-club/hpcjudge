@@ -8,6 +8,7 @@ import (
 
 type Configure struct {
 	ID        uuid.UUID           `yaml:"id"`
+	SpawnCmd  string              `yaml:"spawn-cmd"`
 	Nsq       *NsqConfigure       `yaml:"nsq"`
 	MinIO     *MinIOConfigure     `yaml:"minio"`
 	Redis     *RedisConfigure     `yaml:"redis"`
@@ -79,5 +80,6 @@ type DiscoveryConfigure struct {
 }
 
 type BridgeConfigure struct {
-	SecretKey string `yaml:"secret-key"`
+	SecretKey []byte        `yaml:"secret-key"`
+	Timeout   time.Duration `yaml:"timeout"`
 }

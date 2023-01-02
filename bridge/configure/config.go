@@ -14,7 +14,6 @@ type Configure struct {
 	SecretKey       []byte              `yaml:"secret-key"`
 	Discovery       *DiscoveryConfigure `yaml:"discovery"`
 	StoragePath     map[string]string   `yaml:"storage-path"`
-	SpawnCmd        string              `yaml:"spawn-cmd"`
 	MinIO           *MinIOConfigure     `yaml:"minio"`
 }
 

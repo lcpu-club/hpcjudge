@@ -20,8 +20,8 @@ type ProblemEnvironment struct {
 }
 
 type ProblemEnvironmentScriptLimits struct {
-	CPU    int `json:"cpu" yaml:"cpu" toml:"cpu"`          // in percentage, 200 for 2 CPUs, ...
-	Memory int `json:"memory" yaml:"memory" toml:"memory"` // in MB
+	CPU    int64 `json:"cpu" yaml:"cpu" toml:"cpu"`          // in percentage, 200 for 2 CPUs, ...
+	Memory int64 `json:"memory" yaml:"memory" toml:"memory"` // in MB
 }
 
 type ProblemEnvironmentEstimatedResource struct {
