@@ -3,6 +3,8 @@ package message
 type JudgeMessage struct {
 	ProblemID  string `json:"problem_id"`
 	SolutionID string `json:"submission_id"`
+	Username   string `json:"runner_user"`
+	Password   string `json:"runner_pass"`
 	RunnerArgs string `json:"runner_args"`
 }
 

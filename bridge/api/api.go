@@ -1,6 +1,10 @@
 package api
 
-import "github.com/lcpu-club/hpcjudge/common"
+import (
+	"os"
+
+	"github.com/lcpu-club/hpcjudge/common"
+)
 
 type PartitionedPath struct {
 	Partition string `json:"partition"`
@@ -10,6 +14,8 @@ type PartitionedPath struct {
 type FetchObjectRequest struct {
 	ObjectURL string           `json:"object-url"`
 	Path      *PartitionedPath `json:"path"`
+	Owner     string           `json:"owner"`
+	FileMode  os.FileMode      `json:"file-mode"`
 }
 
 type FetchObjectResponse struct {

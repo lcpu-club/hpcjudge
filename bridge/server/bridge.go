@@ -125,7 +125,14 @@ func (s *Server) HandleFetchObject(w http.ResponseWriter, r *http.Request) {
 		s.cs.Respond(w, resp)
 		return
 	}
-	target, err := os.Create(targetPath)
+	err = os.MkdirAll(filepath.Dir(targetPath), req.FileMode.Perm())
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrMakeDirectoryError)
+		s.cs.Respond(w, resp)
+		return
+	}
+	target, err := os.OpenFile(targetPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, req.FileMode)
 	if err != nil {
 		log.Println("ERROR:", err)
 		resp.SetError(api.ErrFileCreationError)

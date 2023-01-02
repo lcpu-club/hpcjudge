@@ -18,6 +18,9 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "hpc-spawn"
 	app.Usage = "for internal usage"
+	app.Before = func(ctx *cli.Context) error {
+		return nil
+	}
 	app.Commands = []*cli.Command{
 		{
 			Name:  "run-judge-script",

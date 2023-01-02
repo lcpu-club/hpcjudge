@@ -135,7 +135,7 @@ func (j *Judger) connectRedis() error {
 func (j *Judger) listenMinIOEvent() {
 	chResults := j.minio.ListenBucketNotification(
 		context.Background(),
-		j.configure.MinIO.Buckets.Solution, "", "result.json", []string{
+		j.configure.MinIO.Buckets.Solution, "", consts.JudgeReportFile, []string{
 			"s3:ObjectCreated:*",
 		},
 	)
@@ -148,7 +148,7 @@ func (j *Judger) listenMinIOEvent() {
 			for _, record := range n.Records {
 				k := record.S3.Object.Key
 				v := record.S3.Object.ETag
-				id, err := j.resultObjectKeyToSolutionID(k, "result.json")
+				id, err := j.resultObjectKeyToSolutionID(k, consts.JudgeReportFile)
 				if err != nil {
 					continue
 				}
@@ -204,7 +204,7 @@ func (j *Judger) listenMinIOEvent() {
 	}()
 	chRunCommandReports := j.minio.ListenBucketNotification(
 		context.Background(),
-		j.configure.MinIO.Buckets.Solution, "", "run-command-report.json", []string{
+		j.configure.MinIO.Buckets.Solution, "", consts.RunCommandReportFile, []string{
 			"s3:ObjectCreated:*",
 		},
 	)
@@ -217,7 +217,7 @@ func (j *Judger) listenMinIOEvent() {
 			for _, record := range n.Records {
 				k := record.S3.Object.Key
 				v := record.S3.Object.ETag
-				id, err := j.resultObjectKeyToSolutionID(k, "run-command-report.json")
+				id, err := j.resultObjectKeyToSolutionID(k, consts.RunCommandReportFile)
 				if err != nil {
 					continue
 				}
