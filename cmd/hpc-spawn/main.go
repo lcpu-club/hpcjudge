@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 
+	"github.com/lcpu-club/hpcjudge/spawncmd"
 	"github.com/lcpu-club/hpcjudge/spawncmd/consts"
+	"github.com/lcpu-club/hpcjudge/spawncmd/models"
 	"github.com/urfave/cli/v3"
 )
 
@@ -18,8 +21,17 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "hpc-spawn"
 	app.Usage = "for internal usage"
+	app.Flags = append(app.Flags, &cli.StringFlag{
+		Name:        "config",
+		Aliases:     []string{"c", "conf"},
+		Usage:       "Configure file path",
+		Value:       consts.ConfigureFilePath,
+		DefaultText: consts.ConfigureFilePath,
+	})
+	cmd := spawncmd.NewCommand()
 	app.Before = func(ctx *cli.Context) error {
-		return nil
+		confFile := ctx.String("config")
+		return cmd.Init(confFile)
 	}
 	app.Commands = []*cli.Command{
 		{
@@ -32,7 +44,13 @@ func main() {
 				},
 			},
 			Action: func(ctx *cli.Context) error {
-				return nil
+				dText := ctx.String("data")
+				d := new(models.RunJudgeScriptData)
+				err := json.Unmarshal([]byte(dText), d)
+				if err != nil {
+					return err
+				}
+				return cmd.RunJudgeScript(d)
 			},
 		},
 	}

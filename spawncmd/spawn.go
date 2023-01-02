@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"sync"
 
 	"github.com/containerd/cgroups/v3"
 	"github.com/containerd/cgroups/v3/cgroup1"
-	"github.com/lcpu-club/hpcjudge/common"
+	"github.com/lcpu-club/hpcjudge/common/runner"
 	"github.com/lcpu-club/hpcjudge/spawncmd/models"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/satori/uuid"
@@ -17,8 +16,6 @@ import (
 
 type Spawner struct {
 	cgroupBasePath string
-	currentID      int64
-	currentIDLock  *sync.Mutex
 }
 
 var ErrCgroupsV1NotAvailable = fmt.Errorf("cgroups v1 not available")
@@ -71,11 +68,14 @@ func (s *Spawner) SpawnCommand(cmd *exec.Cmd, user string, res *models.ResourceC
 	if id == "" {
 		id = uuid.NewV4().String()
 	}
-	cmd, err := common.CommandUseUser(cmd, user)
+	cmd, err := runner.CommandUseUser(cmd, user)
 	if err != nil {
 		return nil, err
 	}
 	cg, err := s.ResourceControlToCgroup(s.calcCgroupPath(id), res)
+	if err != nil {
+		return nil, err
+	}
 	err = cmd.Start()
 	if err != nil {
 		cg.Delete()

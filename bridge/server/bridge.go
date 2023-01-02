@@ -17,6 +17,7 @@ import (
 	"github.com/lcpu-club/hpcjudge/bridge/configure"
 	"github.com/lcpu-club/hpcjudge/common"
 	"github.com/lcpu-club/hpcjudge/common/consts"
+	"github.com/lcpu-club/hpcjudge/common/runner"
 	"github.com/lcpu-club/hpcjudge/discovery"
 	discoveryProtocol "github.com/lcpu-club/hpcjudge/discovery/protocol"
 	"github.com/minio/minio-go/v7"
@@ -232,7 +233,7 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cmd := exec.Command(req.Command, req.Arguments...)
-	cmd, err = common.CommandUseUser(cmd, req.User)
+	cmd, err = runner.CommandUseUser(cmd, req.User)
 	if err != nil {
 		log.Println("ERROR:", err)
 		resp.SetError(api.ErrFailedToLookupUser)
