@@ -222,6 +222,9 @@ func (j *Judger) listenMinIOEvent() {
 					continue
 				}
 				exists, err := j.checkIfRequestExists(id+v, j.configure.Redis.Expire.Report)
+				if err != nil {
+					log.Println("ERROR:", err)
+				}
 				if exists {
 					continue
 				}
