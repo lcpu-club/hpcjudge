@@ -2,10 +2,12 @@ package spawncmd
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/lcpu-club/hpcjudge/common/runner"
 	"github.com/lcpu-club/hpcjudge/spawncmd/configure"
 	"github.com/lcpu-club/hpcjudge/spawncmd/models"
 	"github.com/lcpu-club/hpcjudge/utilitycmd/replacer"
@@ -68,7 +70,11 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		}
 		cmd = exec.Command(tmpPath)
 	}
-	// TODO: write judge status data to nfs
+	err := runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1)
+	if err != nil {
+		log.Println("ERROR:", err)
+		return err
+	}
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -80,5 +86,9 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		return err
 	}
 	defer cg.Delete()
+	err = runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, cmd.Process.Pid)
+	if err != nil {
+		log.Println("ERROR:", err)
+	}
 	return cmd.Wait()
 }
