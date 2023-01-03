@@ -136,7 +136,16 @@ func (c *Command) HandleReport(ctx *cli.Context) error {
 	return err
 }
 
+func (c *Command) HandleUploadArtifact(ctx *cli.Context) error {
+	return nil
+}
+
+var ErrMaskOperationsNotAllowedOnThisNode = fmt.Errorf("mask operations not allowed on this node")
+
 func (c *Command) HandleMaskWrite(ctx *cli.Context) error {
+	if !c.configure.AllowMask {
+		return ErrMaskOperationsNotAllowedOnThisNode
+	}
 	if ctx.Args().Len() != 1 {
 		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
 	}
@@ -164,6 +173,9 @@ func (c *Command) HandleMaskWrite(ctx *cli.Context) error {
 }
 
 func (c *Command) HandleMaskRead(ctx *cli.Context) error {
+	if !c.configure.AllowMask {
+		return ErrMaskOperationsNotAllowedOnThisNode
+	}
 	if ctx.Args().Len() != 1 {
 		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
 	}
@@ -191,6 +203,9 @@ func (c *Command) HandleMaskRead(ctx *cli.Context) error {
 }
 
 func (c *Command) HandleUnmask(ctx *cli.Context) error {
+	if !c.configure.AllowMask {
+		return ErrMaskOperationsNotAllowedOnThisNode
+	}
 	if ctx.Args().Len() != 1 {
 		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
 	}

@@ -1,3 +1,4 @@
+allow-mask: true
 bridge:
   address:
     - http://127.0.0.1:20651

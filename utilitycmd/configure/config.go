@@ -5,6 +5,7 @@ import "time"
 type Configure struct {
 	Bridge      *BridgeConfigure  `yaml:"bridge"`
 	StoragePath map[string]string `yaml:"storage-path"`
+	AllowMask   bool              `yaml:"allow-mask"`
 }
 
 type BridgeConfigure struct {
