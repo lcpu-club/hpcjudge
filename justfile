@@ -1,6 +1,6 @@
 # Build
 
-build: build-discovery build-judge build-bridge
+build: build-discovery build-judge build-bridge build-spawn build-utility
     
 mkdir-dist:
     mkdir -p dist
@@ -13,6 +13,12 @@ build-judge: mkdir-dist
 
 build-bridge: mkdir-dist
     go build -o dist/hpc-bridge github.com/lcpu-club/hpcjudge/cmd/hpc-bridge
+
+build-spawn: mkdir-dist
+    go build -o dist/hpc-spawn github.com/lcpu-club/hpcjudge/cmd/hpc-spawn
+
+build-utility: mkdir-dist
+    go build -o dist/hpcgame github.com/lcpu-club/hpcjudge/cmd/hpcgame
 
 # End Build
 
