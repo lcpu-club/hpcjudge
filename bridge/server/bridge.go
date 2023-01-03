@@ -85,7 +85,7 @@ func (s *Server) Init(conf *configure.Configure) error {
 	if err != nil {
 		return err
 	}
-	s.cs = common.NewCommonServer(s.configure.Listen, s.configure.SecretKey)
+	s.cs = common.NewCommonServer(s.configure.Listen, []byte(s.configure.SecretKey))
 	s.registerRoutes(s.cs.GetMux())
 	return nil
 }

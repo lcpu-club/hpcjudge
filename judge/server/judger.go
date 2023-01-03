@@ -350,7 +350,9 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		return err
 	}
 	_ = bridgeSvc
-	cc := common.NewCommonSignedClient(bridgeSvc.Address, j.configure.Bridge.SecretKey, j.configure.Bridge.Timeout)
+	cc := common.NewCommonSignedClient(
+		bridgeSvc.Address, []byte(j.configure.Bridge.SecretKey), j.configure.Bridge.Timeout,
+	)
 	bc := bridge.NewClient(cc)
 	url, err := j.minio.PresignedGetObject(
 		context.Background(), j.configure.MinIO.Buckets.Solution,

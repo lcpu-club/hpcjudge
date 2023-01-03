@@ -1,6 +1,6 @@
 package configure
 
 type Configure struct {
-	CgroupsBasePath string            `json:"cgroups-base-path"`
-	StoragePath     map[string]string `json:"storage-path"`
+	CgroupsBasePath string            `yaml:"cgroups-base-path"`
+	StoragePath     map[string]string `yaml:"storage-path"`
 }

@@ -11,7 +11,7 @@ type Configure struct {
 	Tags            []string            `yaml:"tags"`
 	Listen          string              `yaml:"listen"`
 	ExternalAddress string              `yaml:"external-address"`
-	SecretKey       []byte              `yaml:"secret-key"`
+	SecretKey       string              `yaml:"secret-key"`
 	Discovery       *DiscoveryConfigure `yaml:"discovery"`
 	StoragePath     map[string]string   `yaml:"storage-path"`
 	MinIO           *MinIOConfigure     `yaml:"minio"`

@@ -80,6 +80,6 @@ type DiscoveryConfigure struct {
 }
 
 type BridgeConfigure struct {
-	SecretKey []byte        `yaml:"secret-key"`
+	SecretKey string        `yaml:"secret-key"`
 	Timeout   time.Duration `yaml:"timeout"`
 }

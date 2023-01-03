@@ -1,15 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"syscall"
 
 	"github.com/lcpu-club/hpcjudge/utilitycmd"
 	"github.com/lcpu-club/hpcjudge/utilitycmd/configure"
 	"github.com/lcpu-club/hpcjudge/utilitycmd/consts"
 	"github.com/urfave/cli/v3"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
@@ -33,12 +34,22 @@ func main() {
 	app.Usage = "HPCGame Command Line Utility"
 	cmd := utilitycmd.NewCommand()
 	app.Before = func(ctx *cli.Context) error {
+		cStat, err := os.Stat(consts.ConfigureFilePath)
+		if err != nil {
+			return err
+		}
+		sStat, ok := cStat.Sys().(*syscall.Stat_t)
+		if ok {
+			if sStat.Uid != 0 || sStat.Gid != 0 {
+				return fmt.Errorf("configure file should be owned by root:root, or there will be security risks")
+			}
+		}
 		confFile, err := os.ReadFile(consts.ConfigureFilePath)
 		if err != nil {
 			return err
 		}
 		conf := new(configure.Configure)
-		err = json.Unmarshal(confFile, conf)
+		err = yaml.Unmarshal(confFile, conf)
 		if err != nil {
 			return err
 		}
@@ -46,9 +57,10 @@ func main() {
 	}
 	app.Commands = []*cli.Command{
 		{
-			Name:   "problem-path",
-			Usage:  "Get the path to problem files directory",
-			Action: cmd.HandleProblemPath,
+			Name:      "problem-path",
+			Usage:     "Get the path to problem files directory",
+			ArgsUsage: "[PROBLEM_FILE_SUBPATH]",
+			Action:    cmd.HandleProblemPath,
 		},
 		{
 			Name:   "solution-path",
@@ -63,7 +75,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println("hpcgame: E:", err)
+		fmt.Println("hpcgame:", err)
 		os.Exit(-1)
 	}
 }

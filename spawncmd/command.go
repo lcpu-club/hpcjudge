@@ -1,7 +1,6 @@
 package spawncmd
 
 import (
-	"encoding/json"
 	"log"
 	"os"
 	"os/exec"
@@ -11,6 +10,7 @@ import (
 	"github.com/lcpu-club/hpcjudge/spawncmd/configure"
 	"github.com/lcpu-club/hpcjudge/spawncmd/models"
 	"github.com/lcpu-club/hpcjudge/utilitycmd/replacer"
+	"gopkg.in/yaml.v2"
 )
 
 type Command struct {
@@ -29,7 +29,7 @@ func (c *Command) Init(conf string) error {
 		return err
 	}
 	c.configure = new(configure.Configure)
-	err = json.Unmarshal(cFile, c.configure)
+	err = yaml.Unmarshal(cFile, c.configure)
 	if err != nil {
 		return err
 	}
