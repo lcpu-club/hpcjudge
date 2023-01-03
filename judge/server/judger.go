@@ -373,6 +373,11 @@ func (j *Judger) publishToReport(msg *message.JudgeReportMessage) error {
 	if err != nil {
 		return err
 	}
+	if !msg.Success {
+		if j.configure.EnableStatistics {
+			go j.redisConn.Do("INCR", j.configure.Redis.Prefix+"stats-judge-failed")
+		}
+	}
 	if msg.Done {
 		err := j.setRequestNotExist(msg.SolutionID)
 		if err != nil {
@@ -513,9 +518,6 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	}()
 	err = j.ProcessJudge(jMsg)
 	if err != nil {
-		if j.configure.EnableStatistics {
-			go j.redisConn.Do("INCR", j.configure.Redis.Prefix+"stats-judge-failed")
-		}
 		log.Println("ERROR:", err)
 		return err
 	}
