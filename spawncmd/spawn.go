@@ -48,7 +48,7 @@ var cgroupCPUPeriod uint64 = 50000 // in us
 
 func (s *Spawner) ResourceControlToCgroup(path string, res *models.ResourceControl) (cgroup1.Cgroup, error) {
 	quota := int64(cgroupCPUPeriod) * res.CPU / 100
-	mem := res.Memory * 1024
+	mem := res.Memory * 1024 * 1024
 	cg, err := cgroup1.New(cgroup1.StaticPath(path), &specs.LinuxResources{
 		Memory: &specs.LinuxMemory{
 			Limit: &mem,
