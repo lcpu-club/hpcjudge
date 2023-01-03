@@ -324,7 +324,18 @@ func (s *Server) HandleUploadFile(w http.ResponseWriter, r *http.Request) {
 		s.cs.Respond(w, resp)
 		return
 	}
-	_, err = s.minio.FPutObject(context.Background(), req.Bucket, req.Object, path, minio.PutObjectOptions{})
+	bucket := ""
+	switch req.Bucket {
+	case api.BucketProblem:
+		bucket = s.configure.MinIO.Buckets.Problem
+	case api.BucketSolution:
+		bucket = s.configure.MinIO.Buckets.Solution
+	default:
+		resp.SetError(api.ErrInvalidBucketType)
+		s.cs.Respond(w, resp)
+		return
+	}
+	_, err = s.minio.FPutObject(context.Background(), bucket, req.Object, path, minio.PutObjectOptions{})
 	if err != nil {
 		log.Println("ERROR:", err)
 		resp.SetError(api.ErrUploadFileError)

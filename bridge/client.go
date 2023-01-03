@@ -68,7 +68,7 @@ func (c *Client) RemoveFile(partition string, path string) error {
 	return resp.GetError()
 }
 
-func (c *Client) UploadFile(partition string, path string, bucket string, object string) error {
+func (c *Client) UploadFile(partition string, path string, bucket api.BucketType, object string) error {
 	req := &api.UploadFileRequest{
 		Path: &api.PartitionedPath{
 			Partition: partition,

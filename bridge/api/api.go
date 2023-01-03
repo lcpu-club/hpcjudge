@@ -55,9 +55,16 @@ type RemoveFileResponse struct {
 	common.ResponseBase
 }
 
+type BucketType string
+
+const (
+	BucketSolution BucketType = "solution"
+	BucketProblem  BucketType = "problem"
+)
+
 type UploadFileRequest struct {
 	Path   *PartitionedPath `json:"path"`
-	Bucket string           `json:"bucket"`
+	Bucket BucketType       `json:"bucket"`
 	Object string           `json:"object"`
 }
 
