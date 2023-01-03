@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -44,7 +44,7 @@ func (rb *ResponseBase) SetError(e error) {
 func SignMessage(message []byte, secretKey []byte) ([]byte, error) {
 	h := hmac.New(sha256.New, secretKey)
 	h.Write(bytes.Trim(message, " \r\n\t"))
-	return h.(encoding.TextMarshaler).MarshalText()
+	return []byte(hex.EncodeToString(h.Sum(nil))), nil
 }
 
 func CheckSignedMessage(message []byte, secretKey []byte, signature []byte) (bool, error) {

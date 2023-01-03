@@ -3,7 +3,6 @@ secret-key: 1e382ae412b50f6c722786363876c9fe
 listen: :20651
 external-address: http://127.0.0.1:20651
 tags: []
-spawn-cmd: /usr/bin/hpc-spawn
 discovery:
   address:
     - http://127.0.0.1:20751
