@@ -46,7 +46,7 @@ type MinIOConfigure struct {
 	Endpoint        string                     `yaml:"endpoint"`
 	Credentials     *MinIOCredentialsConfigure `yaml:"credentials"`
 	SSL             bool                       `yaml:"ssl"`
-	Buckets         *MinIOBucketsConfigure     `yaml:"Buckets"`
+	Buckets         *MinIOBucketsConfigure     `yaml:"buckets"`
 	PresignedExpiry time.Duration              `yaml:"presigned-expiry"`
 }
 

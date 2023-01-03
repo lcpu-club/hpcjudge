@@ -26,7 +26,7 @@ minio:
     solution: solutions
   presigned-expiry: 5m
 redis:
-  endpoint: 127.0.0.1:6379
+  address: 127.0.0.1:6379
   password: ""
   keep-alive: 1m
   database: 0
