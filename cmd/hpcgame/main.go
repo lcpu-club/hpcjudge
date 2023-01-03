@@ -68,9 +68,16 @@ func main() {
 			Action: cmd.HandleSolutionPath,
 		},
 		{
-			Name:   "report",
-			Usage:  "Report judge result in JSON format",
-			Action: cmd.HandleReport,
+			Name:      "report",
+			Usage:     "Report judge result in JSON format",
+			ArgsUsage: "REPORT_FILE_NAME",
+			Action:    cmd.HandleReport,
+		},
+		{
+			Name:      "upload-artifact",
+			Usage:     "Upload an artifact",
+			ArgsUsage: "ARTIFACT_NAME FILE_NAME",
+			Action:    cmd.HandleUploadArtifact,
 		},
 		{
 			Name:      "mask-write",

@@ -57,7 +57,10 @@ func ErrNotInJudge(command string) error {
 }
 
 func ErrWrongArgumentNumber(command string, expected string) error {
-	return fmt.Errorf("wrong argument number for %v, expected %v", command, expected)
+	return fmt.Errorf(
+		"wrong argument number for %v, expected %v\r\n   (use \"%v help %v\" for help)",
+		command, expected, os.Args[0], command,
+	)
 }
 
 func (c *Command) HandleProblemPath(ctx *cli.Context) error {
@@ -137,7 +140,30 @@ func (c *Command) HandleReport(ctx *cli.Context) error {
 }
 
 func (c *Command) HandleUploadArtifact(ctx *cli.Context) error {
-	return nil
+	if !c.inJudge {
+		return ErrNotInJudge(ctx.Command.Name)
+	}
+	if ctx.Args().Len() != 2 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "2")
+	}
+	target := ctx.Args().Get(0)
+	file := ctx.Args().Get(1)
+	if target == "" || strings.ContainsAny(target, "/?#$%&*<>'\"\\`") {
+		return fmt.Errorf("invalid target name \"%v\"", target)
+	}
+	objKey := filepath.Join(c.judgeStatus.SolutionID, commonConsts.JudgeArtifactsPath, target)
+	partitionedPath, err := c.pathToPartitionedPath(file)
+	if err != nil {
+		return err
+	}
+	bc := c.getBridgeClient()
+	err = bc.UploadFile(
+		partitionedPath.Partition,
+		partitionedPath.Path,
+		bridgeApi.BucketSolution,
+		objKey,
+	)
+	return err
 }
 
 var ErrMaskOperationsNotAllowedOnThisNode = fmt.Errorf("mask operations not allowed on this node")
