@@ -7,13 +7,14 @@ import (
 )
 
 type Configure struct {
-	ID        uuid.UUID           `yaml:"id"`
-	SpawnCmd  string              `yaml:"spawn-cmd"`
-	Nsq       *NsqConfigure       `yaml:"nsq"`
-	MinIO     *MinIOConfigure     `yaml:"minio"`
-	Redis     *RedisConfigure     `yaml:"redis"`
-	Discovery *DiscoveryConfigure `yaml:"discovery"`
-	Bridge    *BridgeConfigure    `yaml:"bridge"`
+	ID               uuid.UUID           `yaml:"id"`
+	SpawnCmd         string              `yaml:"spawn-cmd"`
+	Nsq              *NsqConfigure       `yaml:"nsq"`
+	MinIO            *MinIOConfigure     `yaml:"minio"`
+	Redis            *RedisConfigure     `yaml:"redis"`
+	Discovery        *DiscoveryConfigure `yaml:"discovery"`
+	Bridge           *BridgeConfigure    `yaml:"bridge"`
+	EnableStatistics bool                `yaml:"enable-statistics"`
 }
 
 type NsqConfigure struct {

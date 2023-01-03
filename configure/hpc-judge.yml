@@ -43,3 +43,4 @@ discovery:
 bridge:
   secret-key: 1e382ae412b50f6c722786363876c9fe
   timeout: 10m
+enable-statistics: true

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lcpu-club/hpcjudge/common/version"
 	"github.com/lcpu-club/hpcjudge/discovery/server"
 	"github.com/urfave/cli/v3"
 )
@@ -13,6 +14,11 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "hpc-discovery"
 	app.Usage = "HPC Judge cluster discovery service"
+	app.Version = version.Version
+	app.Authors = []*cli.Author{}
+	for _, author := range version.Authors {
+		app.Authors = append(app.Authors, &cli.Author{Name: author[0], Email: author[1]})
+	}
 	app.Commands = []*cli.Command{
 		{
 			Name:    "serve",

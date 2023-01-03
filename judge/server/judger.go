@@ -17,6 +17,7 @@ import (
 	"github.com/lcpu-club/hpcjudge/common"
 	"github.com/lcpu-club/hpcjudge/common/consts"
 	"github.com/lcpu-club/hpcjudge/common/models"
+	"github.com/lcpu-club/hpcjudge/common/version"
 	"github.com/lcpu-club/hpcjudge/discovery"
 	discoveryProtocol "github.com/lcpu-club/hpcjudge/discovery/protocol"
 	"github.com/lcpu-club/hpcjudge/judge/configure"
@@ -132,6 +133,9 @@ func (j *Judger) connectRedis() error {
 	j.redisConn, err = redis.Dial("tcp", j.configure.Redis.Address, options...)
 	if err != nil {
 		return err
+	}
+	if j.configure.EnableStatistics {
+		j.redisConn.Do("SET", j.configure.Redis.Prefix+"stats-version", version.Version)
 	}
 	log.Println("Connected to Redis Server")
 	return nil
@@ -339,6 +343,9 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	if exists {
 		return err
 	}
+	if j.configure.EnableStatistics {
+		go j.redisConn.Do("INCR", j.configure.Redis.Prefix+"stats-judge-all")
+	}
 	probMeta, err := problem.GetProblemMeta(
 		context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, msg.ProblemID,
 	)
@@ -450,6 +457,9 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	}()
 	err = j.ProcessJudge(jMsg)
 	if err != nil {
+		if j.configure.EnableStatistics {
+			go j.redisConn.Do("INCR", j.configure.Redis.Prefix+"stats-judge-failed")
+		}
 		log.Println("ERROR:", err)
 		return err
 	}

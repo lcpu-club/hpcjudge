@@ -6,6 +6,7 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/lcpu-club/hpcjudge/common/version"
 	"github.com/lcpu-club/hpcjudge/utilitycmd"
 	"github.com/lcpu-club/hpcjudge/utilitycmd/configure"
 	"github.com/lcpu-club/hpcjudge/utilitycmd/consts"
@@ -32,6 +33,11 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "hpcgame"
 	app.Usage = "HPCGame Command Line Utility"
+	app.Version = version.Version
+	app.Authors = []*cli.Author{}
+	for _, author := range version.Authors {
+		app.Authors = append(app.Authors, &cli.Author{Name: author[0], Email: author[1]})
+	}
 	cmd := utilitycmd.NewCommand()
 	app.Before = func(ctx *cli.Context) error {
 		cStat, err := os.Stat(consts.ConfigureFilePath)

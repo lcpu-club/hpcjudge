@@ -9,6 +9,7 @@
     "containerd",
     "Cpus",
     "devel",
+    "gomodule",
     "GSVDWH",
     "Hasher",
     "hpcgame",
@@ -25,11 +26,11 @@
     "Pids",
     "Rcvd",
     "Rdma",
+    "redigo",
     "Shne",
     "spawncmd",
+    "Tianle",
     "urfave",
-    "utilitycmd",
-    "gomodule",
-    "redigo"
+    "utilitycmd"
   ]
 }

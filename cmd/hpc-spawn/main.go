@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/lcpu-club/hpcjudge/common/version"
 	"github.com/lcpu-club/hpcjudge/spawncmd"
 	"github.com/lcpu-club/hpcjudge/spawncmd/consts"
 	"github.com/lcpu-club/hpcjudge/spawncmd/models"
@@ -21,6 +22,11 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "hpc-spawn"
 	app.Usage = "for internal usage"
+	app.Version = version.Version
+	app.Authors = []*cli.Author{}
+	for _, author := range version.Authors {
+		app.Authors = append(app.Authors, &cli.Author{Name: author[0], Email: author[1]})
+	}
 	app.Flags = append(app.Flags, &cli.StringFlag{
 		Name:        "config",
 		Aliases:     []string{"c", "conf"},
