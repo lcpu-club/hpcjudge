@@ -142,7 +142,6 @@ func (j *Judger) connectRedis() error {
 }
 
 func (j *Judger) listenMinIOEvent() {
-	fmt.Printf("%#v\r\n", j.configure.MinIO.Buckets)
 	chResults := j.minio.ListenBucketNotification(
 		context.Background(),
 		j.configure.MinIO.Buckets.Solution, "", consts.JudgeReportFile, []string{
