@@ -23,6 +23,7 @@ import (
 	"github.com/lcpu-club/hpcjudge/judge/configure"
 	"github.com/lcpu-club/hpcjudge/judge/message"
 	"github.com/lcpu-club/hpcjudge/judge/problem"
+	spawnConsts "github.com/lcpu-club/hpcjudge/spawncmd/consts"
 	spawnModels "github.com/lcpu-club/hpcjudge/spawncmd/models"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -423,7 +424,8 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	err = bc.FetchObject(
 		url.String(), "solution", filepath.Join(msg.SolutionID, consts.SolutionFileName), msg.Username, os.FileMode(0600),
 	)
-	defer bc.RemoveFile("solution", filepath.Join(msg.SolutionID, consts.SolutionFileName))
+	// NOTICE: Due to turning to async process, this is not usable
+	// defer bc.RemoveFile("solution", filepath.Join(msg.SolutionID, consts.SolutionFileName))
 	if err != nil {
 		return err
 	}
@@ -435,8 +437,9 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 			Memory: probMeta.Environment.ScriptLimits.Memory,
 			CPU:    probMeta.Environment.ScriptLimits.CPU,
 		},
-		Command: probMeta.Entrance.Command,
-		Script:  probMeta.Entrance.Script,
+		Command:            probMeta.Entrance.Command,
+		Script:             probMeta.Entrance.Script,
+		AutoRemoveSolution: true,
 	}
 	runArgs, err := json.Marshal(runData)
 	if err != nil {
@@ -454,12 +457,15 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	err = bc.ExecuteCommandAsync(
 		j.configure.SpawnCmd,
 		[]string{
-			"-d",
+			"--data",
 			string(runArgs),
 		},
 		"home",
 		msg.Username,
 		msg.Username,
+		[]string{
+			spawnConsts.SpawnEnvVar + "=" + spawnConsts.SpawnEnvVarValue,
+		},
 		reportURL.String(),
 	)
 	if err != nil {

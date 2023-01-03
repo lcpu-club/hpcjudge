@@ -235,6 +235,7 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cmd := exec.Command(req.Command, req.Arguments...)
+	cmd.Env = append(cmd.Env, req.Environment...)
 	cmd, err = runner.CommandUseUser(cmd, req.User)
 	if err != nil {
 		log.Println("ERROR:", err)

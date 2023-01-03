@@ -36,6 +36,7 @@ type ExecuteCommandRequest struct {
 	Arguments     []string         `json:"arguments"`
 	WorkDirectory *PartitionedPath `json:"work-directory"`
 	User          string           `json:"user"`
+	Environment   []string         `json:"environment"`
 	Async         bool             `json:"async"`
 	ReportURL     string           `json:"report-url"` // Used with async
 }

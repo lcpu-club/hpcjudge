@@ -46,6 +46,7 @@ func main() {
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "data",
+					Aliases:  []string{"d"},
 					Required: true,
 				},
 			},

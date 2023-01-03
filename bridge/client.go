@@ -86,7 +86,9 @@ func (c *Client) UploadFile(partition string, path string, bucket api.BucketType
 }
 
 func (c *Client) ExecuteCommand(
-	command string, arguments []string, workPartition string, workPath string, user string,
+	command string, arguments []string,
+	workPartition string, workPath string,
+	user string, environment []string,
 ) (*api.ExecuteCommandResponse, error) {
 	req := &api.ExecuteCommandRequest{
 		Command:   command,
@@ -107,7 +109,10 @@ func (c *Client) ExecuteCommand(
 }
 
 func (c *Client) ExecuteCommandAsync(
-	command string, arguments []string, workPartition string, workPath string, user string, reportURL string,
+	command string, arguments []string,
+	workPartition string, workPath string,
+	user string, environment []string,
+	reportURL string,
 ) error {
 	req := &api.ExecuteCommandRequest{
 		Command:   command,
