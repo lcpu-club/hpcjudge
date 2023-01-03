@@ -192,12 +192,25 @@ func (j *Judger) listenMinIOEvent() {
 				rsltJSON, err := io.ReadAll(obj)
 				if err != nil {
 					log.Println("ERROR:", err)
+					err := j.setRequestNotExist(id + v)
+					if err != nil {
+						log.Println("ERROR:", err)
+					}
 					continue
 				}
 				r := new(models.JudgeResult)
 				err = json.Unmarshal(rsltJSON, r)
 				if err != nil {
 					log.Println("ERROR:", err)
+					err = j.publishToReport(&message.JudgeReportMessage{
+						Success:   false,
+						Error:     "Invalid report from judge script: " + err.Error(),
+						Done:      true,
+						Timestamp: time.Now().UnixMicro(),
+					})
+					if err != nil {
+						log.Println("ERROR:", err)
+					}
 					continue
 				}
 				resp := &message.JudgeReportMessage{
@@ -271,6 +284,8 @@ func (j *Judger) listenMinIOEvent() {
 				resp := &message.JudgeReportMessage{
 					SolutionID: id,
 					Success:    true,
+					Done:       true,
+					Timestamp:  time.Now().UnixMicro(),
 				}
 				if (!r.Success) || r.ExitStatus != 0 {
 					resp.Success = false
@@ -286,14 +301,36 @@ func (j *Judger) listenMinIOEvent() {
 					if err != nil {
 						log.Println("ERROR:", err)
 					}
+				} else {
+					go func() {
+						time.Sleep(2500 * time.Millisecond)
+						ex, err := j.checkIfRequestExists(id, j.configure.Redis.Expire.Judge)
+						if err != nil {
+							log.Println("ERROR:", err)
+						}
+						if ex {
+							err = j.setRequestNotExist(id)
+							if err != nil {
+								log.Println("ERROR:", err)
+							}
+							err = j.publishToReport(&message.JudgeReportMessage{
+								Success:   false,
+								Error:     "Judge script exited before reporting done",
+								Done:      true,
+								Timestamp: time.Now().UnixMicro() - 100000, // avoid competence
+							})
+							if err != nil {
+								log.Println("ERROR:", err)
+							}
+						}
+					}()
 				}
 			}
 		}
 	}()
 }
 
-func (j *Judger) resultObjectKeyToSolutionID(k string, suffix string) (string, error) {
-	key := j.configure.Redis.Prefix + k
+func (j *Judger) resultObjectKeyToSolutionID(key string, suffix string) (string, error) {
 	id, res, found := strings.Cut(key, "/")
 	if !found {
 		return "", fmt.Errorf("/ not found")
@@ -310,7 +347,7 @@ func (j *Judger) checkIfRequestExists(k string, expire time.Duration) (bool, err
 	if err != nil {
 		return true, err
 	}
-	rInteger, ok := rslt.(int)
+	rInteger, ok := rslt.(int64)
 	if !ok {
 		return true, fmt.Errorf("unexpected return type from redis")
 	}
@@ -331,7 +368,17 @@ func (j *Judger) publishToReport(msg *message.JudgeReportMessage) error {
 	if err != nil {
 		return err
 	}
-	return j.nsqReport.Publish(j.configure.Nsq.Topics.Report, mText)
+	err = j.nsqReport.Publish(j.configure.Nsq.Topics.Report, mText)
+	if err != nil {
+		return err
+	}
+	if msg.Done {
+		err := j.setRequestNotExist(msg.SolutionID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (j *Judger) discoverBridge(tags []string, excludeTags []string) (*discoveryProtocol.Service, error) {
