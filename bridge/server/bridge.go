@@ -71,6 +71,10 @@ func (s *Server) Init(conf *configure.Configure) error {
 	}
 	s.discoveryService = discovery.NewService(context.Background(), s.configure.Discovery.Address, s.configure.Discovery.AccessKey)
 	s.discovery = discovery.NewClient(s.configure.Discovery.Address, s.configure.Discovery.AccessKey, s.configure.Discovery.Timeout)
+	err = s.discoveryService.Connect()
+	if err != nil {
+		return err
+	}
 	rSvc, err := s.discoveryService.Inform(&discoveryProtocol.Service{
 		ID:      s.id,
 		Address: s.configure.ExternalAddress,
@@ -81,10 +85,7 @@ func (s *Server) Init(conf *configure.Configure) error {
 		return err
 	}
 	s.id = rSvc.ID
-	err = s.discoveryService.Add()
-	if err != nil {
-		return err
-	}
+	log.Println("Connected to Discovery Server")
 	s.cs = common.NewCommonServer(s.configure.Listen, []byte(s.configure.SecretKey))
 	s.registerRoutes(s.cs.GetMux())
 	return nil

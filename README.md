@@ -14,3 +14,5 @@ Please install `just` (command utility runner), `go` (compiler), `nsq` (message 
 All these components should be available in the same network.
 
 Run `just build` to build all the components
+
+TODO: add wildcard support for mask, unmask, ...
