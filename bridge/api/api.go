@@ -71,3 +71,12 @@ type UploadFileRequest struct {
 type UploadFileResponse struct {
 	common.ResponseBase
 }
+
+type UploadFilePresignedRequest struct {
+	Path         *PartitionedPath `json:"path"`
+	PresignedURL string           `json:"presigned-url"`
+}
+
+type UploadFilePresignedResponse struct {
+	common.ResponseBase
+}

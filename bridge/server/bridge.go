@@ -96,6 +96,7 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/calculate-path", s.HandleCalculatePath)
 	mux.HandleFunc("/remove-file", s.HandleRemoveFile)
 	mux.HandleFunc("/upload-file", s.HandleUploadFile)
+	mux.HandleFunc("/upload-file-presigned", s.HandleUploadFilePresigned)
 	mux.HandleFunc("/execute-command", s.HandleExecuteCommand)
 }
 
@@ -337,6 +338,48 @@ func (s *Server) HandleUploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = s.minio.FPutObject(context.Background(), bucket, req.Object, path, minio.PutObjectOptions{})
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrUploadFileError)
+		s.cs.Respond(w, resp)
+		return
+	}
+	s.cs.Respond(w, resp)
+}
+
+func (s *Server) HandleUploadFilePresigned(w http.ResponseWriter, r *http.Request) {
+	req := new(api.UploadFilePresignedRequest)
+	if !s.cs.ParseRequest(w, r, req) {
+		return
+	}
+	resp := &api.UploadFilePresignedResponse{
+		ResponseBase: common.ResponseBase{
+			Success: true,
+		},
+	}
+	path, err := s.getStoragePath(req.Path.Partition, req.Path.Path)
+	if err != nil {
+		resp.SetError(err)
+		s.cs.Respond(w, resp)
+		return
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFileNotFound)
+		s.cs.Respond(w, resp)
+		return
+	}
+	defer f.Close()
+	hr, err := http.NewRequest("PUT", req.PresignedURL, f)
+	if err != nil {
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrUploadFileError)
+		s.cs.Respond(w, resp)
+		return
+	}
+	hc := &http.Client{}
+	_, err = hc.Do(hr)
 	if err != nil {
 		log.Println("ERROR:", err)
 		resp.SetError(api.ErrUploadFileError)

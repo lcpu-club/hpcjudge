@@ -46,6 +46,11 @@ func (c *Command) deleteFile(path string) error {
 }
 
 func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
+	defer func() {
+		if d.AutoRemoveSolution {
+			os.RemoveAll(filepath.Join(c.configure.StoragePath["solution"], d.SolutionID))
+		}
+	}()
 	var cmd *exec.Cmd
 	tmpPath := ""
 	defer c.deleteFile(tmpPath)

@@ -407,7 +407,6 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	if err != nil {
 		return err
 	}
-	_ = bridgeSvc
 	cc := common.NewCommonSignedClient(
 		bridgeSvc.Address, []byte(j.configure.Bridge.SecretKey), j.configure.Bridge.Timeout,
 	)
