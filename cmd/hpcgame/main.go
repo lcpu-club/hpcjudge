@@ -72,6 +72,24 @@ func main() {
 			Usage:  "Report judge result in JSON format",
 			Action: cmd.HandleReport,
 		},
+		{
+			Name:      "mask-write",
+			Usage:     "Protect a file from being written by user",
+			ArgsUsage: "FILE_NAME",
+			Action:    cmd.HandleMaskWrite,
+		},
+		{
+			Name:      "mask-read",
+			Usage:     "Protect a file from being read or written by user",
+			ArgsUsage: "FILE_NAME",
+			Action:    cmd.HandleMaskRead,
+		},
+		{
+			Name:      "unmask",
+			Usage:     "Disable protection on a file",
+			ArgsUsage: "FILE_NAME",
+			Action:    cmd.HandleUnmask,
+		},
 	}
 	err := app.Run(os.Args)
 	if err != nil {

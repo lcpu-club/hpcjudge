@@ -2,6 +2,7 @@ package utilitycmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -117,10 +118,10 @@ func (c *Command) HandleReport(ctx *cli.Context) error {
 	if !c.inJudge {
 		return ErrNotInJudge(ctx.Command.Name)
 	}
-	reportFile := ctx.Args().Get(0)
-	if reportFile == "" {
-		return fmt.Errorf("command handle-report should have 1 argument: RESULT_FILE_PATH")
+	if ctx.Args().Len() != 1 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
 	}
+	reportFile := ctx.Args().Get(0)
 	partitionedPath, err := c.pathToPartitionedPath(reportFile)
 	if err != nil {
 		return err
@@ -133,4 +134,85 @@ func (c *Command) HandleReport(ctx *cli.Context) error {
 		filepath.Join(c.judgeStatus.SolutionID, commonConsts.JudgeReportFile),
 	)
 	return err
+}
+
+func (c *Command) HandleMaskWrite(ctx *cli.Context) error {
+	if ctx.Args().Len() != 1 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
+	}
+	path := ctx.Args().Get(0)
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	home, err := runner.GetHomeDirectory()
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(path, home) {
+		return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
+	}
+	err = os.Chown(path, 0, 0)
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(path, os.FileMode(0755))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Command) HandleMaskRead(ctx *cli.Context) error {
+	if ctx.Args().Len() != 1 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
+	}
+	path := ctx.Args().Get(0)
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	home, err := runner.GetHomeDirectory()
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(path, home) {
+		return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
+	}
+	err = os.Chown(path, 0, 0)
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(path, os.FileMode(0600))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Command) HandleUnmask(ctx *cli.Context) error {
+	if ctx.Args().Len() != 1 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
+	}
+	path := ctx.Args().Get(0)
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+	home, err := runner.GetHomeDirectory()
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(path, home) {
+		return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
+	}
+	err = os.Chown(path, os.Getuid(), os.Getgid())
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(path, os.FileMode(0750))
+	if err != nil {
+		return err
+	}
+	return nil
 }
