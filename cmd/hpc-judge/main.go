@@ -33,7 +33,11 @@ func main() {
 			if err != nil {
 				return err
 			}
-			return judger.Run()
+			err = judger.Start()
+			if err != nil {
+				return err
+			}
+			return judger.Wait()
 		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{

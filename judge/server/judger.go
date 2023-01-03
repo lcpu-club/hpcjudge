@@ -51,7 +51,7 @@ func NewJudger(conf *configure.Configure) (*Judger, error) {
 	return j, nil
 }
 
-func (j *Judger) Run() error {
+func (j *Judger) Start() error {
 	err := j.connectDiscovery()
 	if err != nil {
 		log.Println("Connect to Discovery failed")
@@ -74,6 +74,10 @@ func (j *Judger) Run() error {
 	}
 	j.listenMinIOEvent()
 	return nil
+}
+
+func (j *Judger) Wait() error {
+	select {}
 }
 
 func (j *Judger) connectDiscovery() error {
@@ -161,6 +165,7 @@ func (j *Judger) listenMinIOEvent() {
 				if err != nil {
 					continue
 				}
+				fmt.Printf("%#v", j.configure.Redis)
 				exists, err := j.checkIfRequestExists(id+v, j.configure.Redis.Expire.Report)
 				if err != nil {
 					log.Println("ERROR:", err)
