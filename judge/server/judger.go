@@ -407,7 +407,7 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, msg.ProblemID,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("get-problem-meta: %v", err)
 	}
 	bridgeSvc, err := j.discoverBridge(probMeta.Environment.Tags, probMeta.Environment.ExcludeTags)
 	if err != nil {
@@ -424,7 +424,7 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		nil,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("pre-sign-report-url: %v", err)
 	}
 	err = bc.FetchObject(
 		url.String(), "solution", filepath.Join(msg.SolutionID, consts.SolutionFileName), msg.Username, os.FileMode(0600),
@@ -432,7 +432,7 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	// NOTICE: Due to turning to async process, this is not usable
 	// defer bc.RemoveFile("solution", filepath.Join(msg.SolutionID, consts.SolutionFileName))
 	if err != nil {
-		return err
+		return fmt.Errorf("bridge-fetch-object: %v", err)
 	}
 	runData := &spawnModels.RunJudgeScriptData{
 		ProblemID:  msg.ProblemID,
@@ -474,7 +474,7 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		reportURL.String(),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("bridge-execute-command: %v", err)
 	}
 	return nil
 }
@@ -482,6 +482,7 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	msg.Touch()
 	jMsg := &message.JudgeMessage{}
+	log.Println("judge message:", string(msg.Body))
 	err := json.Unmarshal(msg.Body, jMsg)
 	if err != nil {
 		if msg.Attempts > uint16(j.configure.Nsq.MaxAttempts) {
