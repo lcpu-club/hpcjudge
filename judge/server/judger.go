@@ -322,6 +322,7 @@ func (j *Judger) listenMinIOEvent() {
 					go func() {
 						time.Sleep(2500 * time.Millisecond)
 						ex, err := j.checkIfRequestExists(id, j.configure.Redis.Expire.Judge)
+						fmt.Println("log test", ex, err)
 						if err != nil {
 							log.Println("ERROR:", err)
 						}
@@ -334,6 +335,7 @@ func (j *Judger) listenMinIOEvent() {
 								Success:   false,
 								Error:     "Judge script exited before reporting done",
 								Done:      true,
+								Message:   "Internal Error: Judge script exited before reporting done",
 								Timestamp: time.Now().UnixMicro() - 100000, // avoid competence
 							})
 							if err != nil {

@@ -36,6 +36,7 @@ func (c *Command) Init(conf *configure.Configure) error {
 		c.inJudge = true
 		c.judgeStatus = judgeStatus
 	}
+	c.configure.AllowMask = true
 	return nil
 }
 
@@ -172,28 +173,30 @@ func (c *Command) HandleMaskWrite(ctx *cli.Context) error {
 	if !c.configure.AllowMask {
 		return ErrMaskOperationsNotAllowedOnThisNode
 	}
-	if ctx.Args().Len() != 1 {
-		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
+	if ctx.Args().Len() < 1 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "at least 1")
 	}
-	path := ctx.Args().Get(0)
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return err
-	}
-	home, err := runner.GetHomeDirectory()
-	if err != nil {
-		return err
-	}
-	if !strings.HasPrefix(path, home) {
-		return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
-	}
-	err = os.Chown(path, 0, 0)
-	if err != nil {
-		return err
-	}
-	err = os.Chmod(path, os.FileMode(0755))
-	if err != nil {
-		return err
+	for _, path := range ctx.Args().Slice() {
+		// path := ctx.Args().Get(0)
+		path, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		home, err := runner.GetHomeDirectory()
+		if err != nil {
+			return err
+		}
+		if !strings.HasPrefix(path, home) {
+			return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
+		}
+		err = os.Chown(path, 0, 0)
+		if err != nil {
+			return err
+		}
+		err = os.Chmod(path, os.FileMode(0755))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -202,28 +205,29 @@ func (c *Command) HandleMaskRead(ctx *cli.Context) error {
 	if !c.configure.AllowMask {
 		return ErrMaskOperationsNotAllowedOnThisNode
 	}
-	if ctx.Args().Len() != 1 {
-		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
+	if ctx.Args().Len() < 1 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "at least 1")
 	}
-	path := ctx.Args().Get(0)
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return err
-	}
-	home, err := runner.GetHomeDirectory()
-	if err != nil {
-		return err
-	}
-	if !strings.HasPrefix(path, home) {
-		return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
-	}
-	err = os.Chown(path, 0, 0)
-	if err != nil {
-		return err
-	}
-	err = os.Chmod(path, os.FileMode(0600))
-	if err != nil {
-		return err
+	for _, path := range ctx.Args().Slice() {
+		path, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		home, err := runner.GetHomeDirectory()
+		if err != nil {
+			return err
+		}
+		if !strings.HasPrefix(path, home) {
+			return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
+		}
+		err = os.Chown(path, 0, 0)
+		if err != nil {
+			return err
+		}
+		err = os.Chmod(path, os.FileMode(0600))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -232,28 +236,29 @@ func (c *Command) HandleUnmask(ctx *cli.Context) error {
 	if !c.configure.AllowMask {
 		return ErrMaskOperationsNotAllowedOnThisNode
 	}
-	if ctx.Args().Len() != 1 {
-		return ErrWrongArgumentNumber(ctx.Command.Name, "1")
+	if ctx.Args().Len() < 1 {
+		return ErrWrongArgumentNumber(ctx.Command.Name, "at least 1")
 	}
-	path := ctx.Args().Get(0)
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return err
-	}
-	home, err := runner.GetHomeDirectory()
-	if err != nil {
-		return err
-	}
-	if !strings.HasPrefix(path, home) {
-		return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
-	}
-	err = os.Chown(path, os.Getuid(), os.Getgid())
-	if err != nil {
-		return err
-	}
-	err = os.Chmod(path, os.FileMode(0750))
-	if err != nil {
-		return err
+	for _, path := range ctx.Args().Slice() {
+		path, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		home, err := runner.GetHomeDirectory()
+		if err != nil {
+			return err
+		}
+		if !strings.HasPrefix(path, home) {
+			return fmt.Errorf("file %v not in user's home folder %v, permission denied", path, home)
+		}
+		err = os.Chown(path, os.Getuid(), os.Getgid())
+		if err != nil {
+			return err
+		}
+		err = os.Chmod(path, os.FileMode(0750))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

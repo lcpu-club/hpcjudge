@@ -65,16 +65,20 @@ type Status struct {
 	EntrancePID int    `json:"entrance-pid"`
 }
 
-func getStatusFileName(storagePath map[string]string) (string, error) {
-	u, err := GetCurrentUsername()
-	if err != nil {
-		return "", err
+func getStatusFileName(storagePath map[string]string, user string) (string, error) {
+	u := user
+	var err error
+	if u == "" {
+		u, err = GetCurrentUsername()
+		if err != nil {
+			return "", err
+		}
 	}
 	return filepath.Join(storagePath["status"], u+".judge.json"), nil
 }
 
 func GetStatus(storagePath map[string]string) (*Status, error) {
-	path, err := getStatusFileName(storagePath)
+	path, err := getStatusFileName(storagePath, "")
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +96,9 @@ func GetStatus(storagePath map[string]string) (*Status, error) {
 
 func WriteStatus(
 	storagePath map[string]string, problemID string, solutionID string, entrancePID int,
+	user string,
 ) error {
-	path, err := getStatusFileName(storagePath)
+	path, err := getStatusFileName(storagePath, user)
 	if err != nil {
 		return err
 	}
@@ -113,8 +118,8 @@ func WriteStatus(
 	return os.Chown(path, 0, 0)
 }
 
-func ClearStatus(storagePath map[string]string) error {
-	path, err := getStatusFileName(storagePath)
+func ClearStatus(storagePath map[string]string, user string) error {
+	path, err := getStatusFileName(storagePath, user)
 	if err != nil {
 		return err
 	}

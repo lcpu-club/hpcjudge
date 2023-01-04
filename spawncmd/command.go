@@ -105,8 +105,8 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		}
 		cmd = exec.Command("/bin/bash", tmpPath)
 	}
-	err = runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1)
-	defer runner.ClearStatus(c.configure.StoragePath)
+	err = runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1, d.Username)
+	defer runner.ClearStatus(c.configure.StoragePath, d.Username)
 	if err != nil {
 		log.Println("ERROR:", err)
 		return err
@@ -122,7 +122,9 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		return err
 	}
 	defer cg.Delete()
-	err = runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, cmd.Process.Pid)
+	err = runner.WriteStatus(
+		c.configure.StoragePath, d.ProblemID, d.SolutionID, cmd.Process.Pid, d.Username,
+	)
 	if err != nil {
 		log.Println("ERROR:", err)
 	}
