@@ -399,7 +399,7 @@ func (j *Judger) listenMinIOEvent() {
 						}
 						break
 					}
-					if fi.Name == "problem.toml" {
+					if strings.TrimPrefix(fi.Name, "./") == "problem.toml" {
 						found = true
 						size = fi.Size
 						break
@@ -421,7 +421,7 @@ func (j *Judger) listenMinIOEvent() {
 				if err != nil {
 					log.Println("ERROR:", err)
 				} else {
-					log.Println("Problem", id, "problem.toml SHA1:", inf.ChecksumSHA1)
+					log.Println("Problem", id, "problem.toml:", inf.LastModified)
 				}
 				obj.Close()
 				// TODO: logic to upload to bridge on ALL MACHINES
