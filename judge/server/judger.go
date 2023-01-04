@@ -519,7 +519,12 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	}()
 	err = j.ProcessJudge(jMsg)
 	if err != nil {
+		errs := j.setRequestNotExist(jMsg.SolutionID)
+		if errs != nil {
+			log.Println("ERROR:", errs)
+		}
 		log.Println("ERROR:", err)
+		msg.Requeue(-1)
 		return err
 	}
 	msg.Finish()
