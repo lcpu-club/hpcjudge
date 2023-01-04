@@ -47,6 +47,24 @@ func (c *Command) deleteFile(path string) error {
 	return os.Remove(path)
 }
 
+func (c *Command) cleanHomeDir(username string) error {
+	u, err := user.Lookup(username)
+	if err != nil {
+		return err
+	}
+	entries, err := os.ReadDir(u.HomeDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		err = os.RemoveAll(entry.Name())
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 	if d.ResourceControl == nil {
 		d.ResourceControl = &models.ResourceControl{
@@ -59,6 +77,7 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 	defer func() {
 		if d.AutoRemoveSolution {
 			os.RemoveAll(solutionPath)
+			c.cleanHomeDir(d.Username)
 		}
 	}()
 	err := os.Chmod(solutionPath, os.FileMode(0755))
