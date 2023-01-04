@@ -610,7 +610,7 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	reportURL, err := j.minio.PresignedPutObject(
 		context.Background(),
 		j.configure.MinIO.Buckets.Solution,
-		consts.RunCommandReportFile,
+		filepath.Join(msg.SolutionID, consts.RunCommandReportFile),
 		j.configure.MinIO.PresignedExpiry,
 	)
 	if err != nil {
@@ -619,12 +619,13 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 	err = bc.ExecuteCommandAsync(
 		j.configure.SpawnCmd,
 		[]string{
+			"run-judge-script",
 			"--data",
 			string(runArgs),
 		},
 		"home",
 		msg.Username,
-		msg.Username,
+		"root",
 		[]string{
 			spawnConsts.SpawnEnvVar + "=" + spawnConsts.SpawnEnvVarValue,
 		},

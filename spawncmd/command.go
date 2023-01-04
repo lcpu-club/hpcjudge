@@ -46,6 +46,12 @@ func (c *Command) deleteFile(path string) error {
 }
 
 func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
+	if d.ResourceControl == nil {
+		d.ResourceControl = &models.ResourceControl{
+			CPU:    100,
+			Memory: 1024,
+		}
+	}
 	defer func() {
 		if d.AutoRemoveSolution {
 			os.RemoveAll(filepath.Join(c.configure.StoragePath["solution"], d.SolutionID))

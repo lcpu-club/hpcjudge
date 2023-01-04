@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -63,6 +64,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		os.Exit(-1)
 	}
 }
