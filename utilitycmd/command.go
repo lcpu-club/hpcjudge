@@ -36,7 +36,6 @@ func (c *Command) Init(conf *configure.Configure) error {
 		c.inJudge = true
 		c.judgeStatus = judgeStatus
 	}
-	c.configure.AllowMask = true
 	return nil
 }
 
