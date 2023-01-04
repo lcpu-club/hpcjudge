@@ -1,6 +1,7 @@
 package server
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -205,6 +206,7 @@ func (j *Judger) listenMinIOEvent() {
 					if err != nil {
 						log.Println("ERROR:", err)
 					}
+					obj.Close()
 					continue
 				}
 				r := new(models.JudgeResult)
@@ -220,6 +222,7 @@ func (j *Judger) listenMinIOEvent() {
 					if err != nil {
 						log.Println("ERROR:", err)
 					}
+					obj.Close()
 					continue
 				}
 				resp := &message.JudgeReportMessage{
@@ -234,6 +237,7 @@ func (j *Judger) listenMinIOEvent() {
 				if err != nil {
 					log.Println("ERROR:", err)
 				}
+				obj.Close()
 			}
 		}
 	}()
@@ -282,12 +286,14 @@ func (j *Judger) listenMinIOEvent() {
 				rsltJSON, err := io.ReadAll(obj)
 				if err != nil {
 					log.Println("ERROR:", err)
+					obj.Close()
 					continue
 				}
 				r := new(bridgeApi.ExecuteCommandResponse)
 				err = json.Unmarshal(rsltJSON, r)
 				if err != nil {
 					log.Println("ERROR:", err)
+					obj.Close()
 					continue
 				}
 				resp := &message.JudgeReportMessage{
@@ -296,6 +302,7 @@ func (j *Judger) listenMinIOEvent() {
 					Done:       true,
 					Timestamp:  time.Now().UnixMicro(),
 				}
+				obj.Close()
 				if (!r.Success) || r.ExitStatus != 0 {
 					resp.Success = false
 					if !r.Success {
@@ -333,6 +340,139 @@ func (j *Judger) listenMinIOEvent() {
 							}
 						}
 					}()
+				}
+			}
+		}
+	}()
+	chProblemDataUploads := j.minio.ListenBucketNotification(
+		context.Background(),
+		j.configure.MinIO.Buckets.Problem, "", consts.ProblemDataFile, []string{
+			"s3:ObjectCreated:*",
+		},
+	)
+	go func() {
+		for n := range chProblemDataUploads {
+			if n.Err != nil {
+				log.Println("ERROR:", n.Err)
+				continue
+			}
+			for _, record := range n.Records {
+				k := record.S3.Object.Key
+				v := record.S3.Object.ETag
+				// actually it is problemID
+				id, err := j.resultObjectKeyToSolutionID(k, consts.ProblemDataFile)
+				if err != nil {
+					continue
+				}
+				reqId := "p." + id + v
+				exists, err := j.checkIfRequestExists(reqId, j.configure.Redis.Expire.Report)
+				if err != nil {
+					log.Println("ERROR:", err)
+				}
+				if exists {
+					continue
+				}
+				obj, err := j.minio.GetObject(
+					context.Background(),
+					j.configure.MinIO.Buckets.Problem,
+					k,
+					minio.GetObjectOptions{
+						VersionID: record.S3.Object.VersionID,
+					},
+				)
+				if err != nil {
+					log.Println("ERROR:", err)
+					err := j.setRequestNotExist(reqId)
+					if err != nil {
+						log.Println("ERROR:", err)
+					}
+					continue
+				}
+				tarRd := tar.NewReader(obj)
+				found := false
+				var size int64
+				for {
+					fi, err := tarRd.Next()
+					if err != nil {
+						if err != io.EOF {
+							log.Println("ERROR: read problem data:", err)
+						}
+						break
+					}
+					if fi.Name == "problem.toml" {
+						found = true
+						size = fi.Size
+						break
+					}
+				}
+				if !found {
+					log.Println("ERROR: read problem data: no valid problem.toml")
+					obj.Close()
+					continue
+				}
+				inf, err := j.minio.PutObject(
+					context.Background(),
+					j.configure.MinIO.Buckets.Problem,
+					filepath.Join(id, "problem.toml"),
+					tarRd,
+					size,
+					minio.PutObjectOptions{},
+				)
+				if err != nil {
+					log.Println("ERROR:", err)
+				} else {
+					log.Println("Problem", id, "problem.toml SHA1:", inf.ChecksumSHA1)
+				}
+				obj.Close()
+				// TODO: logic to upload to bridge on ALL MACHINES
+				// TODO: consider if to enable concurrency here
+				probMeta, err := problem.GetProblemMeta(
+					context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, id,
+				)
+				if err != nil {
+					log.Println("ERROR: get-problem-meta:", err)
+				}
+				bridgeSvc, err := j.discoverBridge(
+					probMeta.Environment.Tags, probMeta.Environment.ExcludeTags,
+				)
+				if err != nil {
+					log.Println("ERROR:", err)
+					continue
+				}
+				cc := common.NewCommonSignedClient(
+					bridgeSvc.Address, []byte(j.configure.Bridge.SecretKey), j.configure.Bridge.Timeout,
+				)
+				bc := bridge.NewClient(cc)
+				url, err := j.minio.PresignedGetObject(
+					context.Background(),
+					j.configure.MinIO.Buckets.Problem, k,
+					j.configure.MinIO.PresignedExpiry, nil,
+				)
+				if err != nil {
+					log.Println("ERROR:", err)
+					continue
+				}
+				tmpFileName := "problem_tmp_data.tar"
+				err = bc.FetchObject(
+					url.String(),
+					"problem", filepath.Join(id, tmpFileName),
+					"root", os.FileMode(0644),
+				)
+				if err != nil {
+					log.Println("ERROR: fetch-problem-data:", err)
+				}
+				resp, err := bc.ExecuteCommand(
+					"tar", []string{"-xf", tmpFileName}, "problem", id, "root", []string{},
+				)
+				if err != nil {
+					log.Println("ERROR: unarchive-problem-data:", err)
+				}
+				if !resp.Success {
+					log.Println("ERROR: unarchive-problem-data:", resp.GetError())
+				}
+				err = bc.RemoveFile("problem", filepath.Join(id, tmpFileName))
+				if err != nil {
+					log.Println("ERROR: remove-temp-file:", err)
 				}
 			}
 		}

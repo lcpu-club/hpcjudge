@@ -9,6 +9,7 @@ const (
 	RunCommandReportFile = "run-command-report.json"
 	JudgeReportFile      = "result.json"
 	JudgeArtifactsPath   = "artifact"
+	ProblemDataFile      = "data.tar"
 )
 
 const (
