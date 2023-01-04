@@ -485,7 +485,7 @@ func (j *Judger) resultObjectKeyToSolutionID(key string, suffix string) (string,
 		return "", fmt.Errorf("/ not found")
 	}
 	if res != suffix {
-		return "", fmt.Errorf("not result.json")
+		return "", fmt.Errorf("not %v", suffix)
 	}
 	return id, nil
 }
