@@ -97,8 +97,9 @@ func (c *Client) ExecuteCommand(
 			Partition: workPartition,
 			Path:      workPath,
 		},
-		User:  user,
-		Async: false,
+		User:        user,
+		Environment: environment,
+		Async:       false,
 	}
 	resp := new(api.ExecuteCommandResponse)
 	err := c.cc.DoPostRequest("execute-command", req, resp)
@@ -121,9 +122,10 @@ func (c *Client) ExecuteCommandAsync(
 			Partition: workPartition,
 			Path:      workPath,
 		},
-		User:      user,
-		Async:     true,
-		ReportURL: reportURL,
+		User:        user,
+		Environment: environment,
+		Async:       true,
+		ReportURL:   reportURL,
 	}
 	resp := new(api.ExecuteCommandResponse)
 	err := c.cc.DoPostRequest("execute-command", req, resp)
