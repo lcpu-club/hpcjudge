@@ -11,9 +11,10 @@ nsq:
     report: runner.judge.status
   channel: judgers
   auth-secret: ""
-  max-attempts: 3
-  requeue-delay: 30s
-  msg-timeout: 35s
+  max-attempts: 2
+  requeue-delay: 2s
+  rdy-redistribute-interval: 100ms
+  msg-timeout: 18s
   concurrent: 4
 minio:
   endpoint: 127.0.0.1:9000
@@ -28,9 +29,11 @@ minio:
 redis:
   address: 127.0.0.1:6379
   password: ""
-  keep-alive: 1m
+  keep-alive: 5s
   database: 0
   prefix: judge-
+  max-idle: 4
+  idle-timeout: 10s
   expire:
     report: 10s
     judge: 12h

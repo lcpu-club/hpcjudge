@@ -36,7 +36,7 @@ type Judger struct {
 	nsqConsumer             *nsq.Consumer
 	nsqReport               *nsq.Producer
 	discoveryClient         *discovery.Client
-	redisConn               redis.Conn
+	redisPool               *redis.Pool
 	configure               *configure.Configure
 	minio                   *minio.Client
 	nsqMessageTouchInterval time.Duration
@@ -92,6 +92,7 @@ func (j *Judger) connectNSQ() error {
 	config.MaxAttempts = uint16(j.configure.Nsq.MaxAttempts) + 1
 	config.MaxRequeueDelay = j.configure.Nsq.RequeueDelay
 	config.MsgTimeout = j.configure.Nsq.MsgTimeout
+	config.RDYRedistributeInterval = j.configure.Nsq.RDYRedistributeInterval
 	if j.configure.Nsq.MsgTimeout >= 3*time.Second {
 		j.nsqMessageTouchInterval = j.configure.Nsq.MsgTimeout - (1 * time.Second)
 	} else {
@@ -134,13 +135,20 @@ func (j *Judger) connectRedis() error {
 	}
 	options = append(options, redis.DialKeepAlive(j.configure.Redis.KeepAlive))
 	options = append(options, redis.DialDatabase(j.configure.Redis.Database))
-	var err error
-	j.redisConn, err = redis.Dial("tcp", j.configure.Redis.Address, options...)
+	j.redisPool = &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", j.configure.Redis.Address, options...)
+		},
+		MaxIdle:     j.configure.Redis.MaxIdle,
+		IdleTimeout: j.configure.Redis.IdleTimeout,
+	}
+	conn, err := j.redisPool.Dial()
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 	if j.configure.EnableStatistics {
-		j.redisConn.Do("SET", j.configure.Redis.Prefix+"stats-version", version.Version)
+		conn.Do("SET", j.configure.Redis.Prefix+"stats-version", version.Version)
 	}
 	log.Println("Connected to Redis Server")
 	return nil
@@ -344,7 +352,9 @@ func (j *Judger) resultObjectKeyToSolutionID(key string, suffix string) (string,
 
 func (j *Judger) checkIfRequestExists(k string, expire time.Duration) (bool, error) {
 	key := j.configure.Redis.Prefix + k
-	rslt, err := j.redisConn.Do("INCR", key)
+	rConn := j.redisPool.Get()
+	defer rConn.Close()
+	rslt, err := rConn.Do("INCR", key)
 	if err != nil {
 		return true, err
 	}
@@ -353,15 +363,21 @@ func (j *Judger) checkIfRequestExists(k string, expire time.Duration) (bool, err
 		return true, fmt.Errorf("unexpected return type from redis")
 	}
 	if rInteger == 1 {
-		_, err = j.redisConn.Do("EXPIRE", key, int(expire/time.Second))
+		_, err = rConn.Do("EXPIRE", key, int(expire/time.Second))
 		return false, err
 	}
 	return true, err
 }
 
 func (j *Judger) setRequestNotExist(key string) error {
-	_, err := j.redisConn.Do("DEL", j.configure.Redis.Prefix+key)
+	_, err := j.redisDo("DEL", j.configure.Redis.Prefix+key)
 	return err
+}
+
+func (j *Judger) redisDo(commandName string, args ...interface{}) (reply interface{}, err error) {
+	rConn := j.redisPool.Get()
+	defer rConn.Close()
+	return rConn.Do(commandName, args...)
 }
 
 func (j *Judger) publishToReport(msg *message.JudgeReportMessage) error {
@@ -375,7 +391,7 @@ func (j *Judger) publishToReport(msg *message.JudgeReportMessage) error {
 	}
 	if !msg.Success {
 		if j.configure.EnableStatistics {
-			go j.redisConn.Do("INCR", j.configure.Redis.Prefix+"stats-judge-failed")
+			go j.redisDo("INCR", j.configure.Redis.Prefix+"stats-judge-failed")
 		}
 	}
 	if msg.Done {
@@ -401,7 +417,7 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		return err
 	}
 	if j.configure.EnableStatistics {
-		go j.redisConn.Do("INCR", j.configure.Redis.Prefix+"stats-judge-all")
+		go j.redisDo("INCR", j.configure.Redis.Prefix+"stats-judge-all")
 	}
 	probMeta, err := problem.GetProblemMeta(
 		context.Background(), j.minio, j.configure.MinIO.Buckets.Problem, msg.ProblemID,
@@ -485,11 +501,13 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	log.Println("judge message:", string(msg.Body))
 	err := json.Unmarshal(msg.Body, jMsg)
 	if err != nil {
+		fmt.Println("ERROR:", err)
 		if msg.Attempts > uint16(j.configure.Nsq.MaxAttempts) {
 			msg.Finish()
 			return nil
 		}
-		return err
+		msg.RequeueWithoutBackoff(-1)
+		return nil
 	}
 	if msg.Attempts > uint16(j.configure.Nsq.MaxAttempts) {
 		err := j.publishToReport(&message.JudgeReportMessage{
@@ -507,17 +525,20 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 		msg.Finish()
 		return message.ErrMaxAttemptsExceeded
 	}
-	finCh := make(chan bool)
-	defer func() { finCh <- true }()
-	go func() {
-		select {
-		case <-finCh:
-			return
-		default:
-		}
-		msg.Touch()
-		time.Sleep(j.nsqMessageTouchInterval)
-	}()
+	// BLOCKS THE PROGRAM FROM PROCESSING MORE MESSAGES
+	// DON'T UNCOMMENT
+	//
+	// finCh := make(chan bool)
+	// defer func() { finCh <- true }()
+	// go func() {
+	// 	select {
+	// 	case <-finCh:
+	// 		return
+	// 	default:
+	// 		msg.Touch()
+	// 		time.Sleep(j.nsqMessageTouchInterval)
+	// 	}
+	// }()
 	err = j.ProcessJudge(jMsg)
 	if err != nil {
 		errs := j.setRequestNotExist(jMsg.SolutionID)
@@ -539,10 +560,10 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 				log.Println("ERROR:", err)
 			}
 			msg.Finish()
-			return err
+			return nil
 		}
-		msg.Requeue(-1)
-		return err
+		msg.RequeueWithoutBackoff(j.configure.Nsq.RequeueDelay)
+		return nil
 	}
 	msg.Finish()
 	return nil

@@ -18,15 +18,16 @@ type Configure struct {
 }
 
 type NsqConfigure struct {
-	Nsqd         *NsqdConfigure       `yaml:"nsqd"`
-	NsqLookupd   *NsqLookupdConfigure `yaml:"nsqlookupd"`
-	MaxAttempts  int                  `yaml:"max-attempts"`
-	RequeueDelay time.Duration        `yaml:"requeue-delay"`
-	MsgTimeout   time.Duration        `yaml:"msg-timeout"` // Minimum: 1s
-	AuthSecret   string               `yaml:"auth-secret"`
-	Concurrent   int                  `yaml:"concurrent"`
-	Topics       *NsqTopicConfigure   `yaml:"topics"`
-	Channel      string               `yaml:"channel"`
+	Nsqd                    *NsqdConfigure       `yaml:"nsqd"`
+	NsqLookupd              *NsqLookupdConfigure `yaml:"nsqlookupd"`
+	MaxAttempts             int                  `yaml:"max-attempts"`
+	RequeueDelay            time.Duration        `yaml:"requeue-delay"`
+	MsgTimeout              time.Duration        `yaml:"msg-timeout"` // Minimum: 1s
+	AuthSecret              string               `yaml:"auth-secret"`
+	RDYRedistributeInterval time.Duration        `yaml:"rdy-redistribute-interval"`
+	Concurrent              int                  `yaml:"concurrent"`
+	Topics                  *NsqTopicConfigure   `yaml:"topics"`
+	Channel                 string               `yaml:"channel"`
 }
 
 type NsqdConfigure struct {
@@ -61,12 +62,14 @@ type MinIOBucketsConfigure struct {
 }
 
 type RedisConfigure struct {
-	Address   string                `yaml:"address"`
-	Password  string                `yaml:"password"`
-	KeepAlive time.Duration         `yaml:"keep-alive"`
-	Database  int                   `yaml:"database"`
-	Prefix    string                `yaml:"prefix"`
-	Expire    *RedisExpireConfigure `yaml:"expire"`
+	Address     string                `yaml:"address"`
+	Password    string                `yaml:"password"`
+	KeepAlive   time.Duration         `yaml:"keep-alive"`
+	Database    int                   `yaml:"database"`
+	Prefix      string                `yaml:"prefix"`
+	MaxIdle     int                   `yaml:"max-idle"`
+	IdleTimeout time.Duration         `yaml:"idle-timeout"`
+	Expire      *RedisExpireConfigure `yaml:"expire"`
 }
 
 type RedisExpireConfigure struct {
