@@ -9,6 +9,7 @@
     "consts",
     "containerd",
     "Cpus",
+    "curr",
     "devel",
     "gomodule",
     "GSVDWH",

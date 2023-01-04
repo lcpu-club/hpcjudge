@@ -33,6 +33,9 @@ func CommandUseUser(cmd *exec.Cmd, username string) (*exec.Cmd, error) {
 		}
 	}
 	cmd.Dir = u.HomeDir
+	if cmd.Env == nil {
+		cmd.Env = os.Environ()
+	}
 	cmd.Env = append(cmd.Env, []string{
 		"HOME=" + u.HomeDir,
 		"USER=" + u.Username,

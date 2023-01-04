@@ -4,7 +4,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strconv"
 
 	"github.com/lcpu-club/hpcjudge/common/runner"
 	"github.com/lcpu-club/hpcjudge/spawncmd/configure"
@@ -52,18 +54,24 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 			Memory: 1024,
 		}
 	}
+	solutionPath := filepath.Join(c.configure.StoragePath["solution"], d.SolutionID)
+	problemPath := filepath.Join(c.configure.StoragePath["problem"], d.ProblemID)
 	defer func() {
 		if d.AutoRemoveSolution {
-			os.RemoveAll(filepath.Join(c.configure.StoragePath["solution"], d.SolutionID))
+			os.RemoveAll(solutionPath)
 		}
 	}()
+	err := os.Chmod(solutionPath, os.FileMode(0755))
+	if err != nil {
+		return err
+	}
 	var cmd *exec.Cmd
 	tmpPath := ""
 	defer c.deleteFile(tmpPath)
 	if d.Command != "" {
-		cmd = exec.Command("bash", "-c", d.Command)
+		cmd = exec.Command("/bin/bash", "-c", d.Command)
 	} else {
-		script, err := os.ReadFile(d.Script)
+		script, err := os.ReadFile(filepath.Join(problemPath, d.Script))
 		if err != nil {
 			return err
 		}
@@ -74,14 +82,30 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 			c.configure.StoragePath,
 		)
 		script = []byte(replacer.Replace(string(script)))
-		tmpPath = filepath.Join(c.configure.StoragePath["solution"], d.SolutionID, "judge-script.sh")
+		tmpPath = filepath.Join(solutionPath, "judge-script.sh")
 		err = os.WriteFile(tmpPath, script, os.FileMode(0755))
 		if err != nil {
 			return err
 		}
-		cmd = exec.Command(tmpPath)
+		u, err := user.Lookup(d.Username)
+		if err != nil {
+			return err
+		}
+		uid, err := strconv.Atoi(u.Uid)
+		if err != nil {
+			return err
+		}
+		gid, err := strconv.Atoi(u.Gid)
+		if err != nil {
+			return err
+		}
+		err = os.Chown(tmpPath, uid, gid)
+		if err != nil {
+			return err
+		}
+		cmd = exec.Command("/bin/bash", tmpPath)
 	}
-	err := runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1)
+	err = runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1)
 	defer runner.ClearStatus(c.configure.StoragePath)
 	if err != nil {
 		log.Println("ERROR:", err)

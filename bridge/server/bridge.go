@@ -10,8 +10,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/lcpu-club/hpcjudge/bridge/api"
 	"github.com/lcpu-club/hpcjudge/bridge/configure"
@@ -112,6 +115,54 @@ func (s *Server) getStoragePath(partition string, path string) (string, error) {
 	return p, nil
 }
 
+// mkdirAll with owner copied from os package
+func mkdirAll(path string, perm os.FileMode, ownerUid int, ownerGid int) error {
+	// Fast path: if we can tell whether path is a directory or file, stop with success or error.
+	dir, err := os.Stat(path)
+	if err == nil {
+		if dir.IsDir() {
+			return nil
+		}
+		return &os.PathError{Op: "mkdir", Path: path, Err: syscall.ENOTDIR}
+	}
+
+	// Slow path: make sure parent exists and then call Mkdir for path.
+	i := len(path)
+	for i > 0 && os.IsPathSeparator(path[i-1]) { // Skip trailing path separator.
+		i--
+	}
+
+	j := i
+	for j > 0 && !os.IsPathSeparator(path[j-1]) { // Scan backward over element.
+		j--
+	}
+
+	if j > 1 {
+		// Create parent.
+		err = mkdirAll(path[:j-1], perm, ownerUid, ownerGid)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Parent now exists; invoke Mkdir and use its result.
+	err = os.Mkdir(path, perm)
+	if err != nil {
+		// Handle arguments like "foo/." by
+		// double-checking that directory doesn't exist.
+		dir, err1 := os.Lstat(path)
+		if err1 == nil && dir.IsDir() {
+			return nil
+		}
+		return err
+	}
+	err = os.Chown(path, ownerUid, ownerGid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Server) HandleFetchObject(w http.ResponseWriter, r *http.Request) {
 	req := new(api.FetchObjectRequest)
 	if !s.cs.ParseRequest(w, r, req) {
@@ -128,7 +179,35 @@ func (s *Server) HandleFetchObject(w http.ResponseWriter, r *http.Request) {
 		s.cs.Respond(w, resp)
 		return
 	}
-	err = os.MkdirAll(filepath.Dir(targetPath), req.FileMode.Perm())
+	var uid, gid int
+	if req.Owner != "" {
+		u, err := user.Lookup(req.Owner)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToLookupUser)
+			s.cs.Respond(w, resp)
+			return
+		}
+		uid, err = strconv.Atoi(u.Uid)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToLookupUser)
+			s.cs.Respond(w, resp)
+			return
+		}
+		gid, err = strconv.Atoi(u.Gid)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToLookupUser)
+			s.cs.Respond(w, resp)
+			return
+		}
+	}
+	if req.Owner != "" {
+		err = mkdirAll(filepath.Dir(targetPath), req.FileMode.Perm(), uid, gid)
+	} else {
+		err = os.MkdirAll(filepath.Dir(targetPath), req.FileMode.Perm())
+	}
 	if err != nil {
 		log.Println("ERROR:", err)
 		resp.SetError(api.ErrMakeDirectoryError)
@@ -151,7 +230,17 @@ func (s *Server) HandleFetchObject(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = io.Copy(target, remote.Body)
 	if err != nil {
-		resp.SetError(err)
+		log.Println("ERROR:", err)
+		resp.SetError(api.ErrFailedToWriteFile)
+		s.cs.Respond(w, resp)
+		return
+	}
+	if req.Owner != "" {
+		err = os.Chown(targetPath, uid, gid)
+		if err != nil {
+			log.Println("ERROR:", err)
+			resp.SetError(api.ErrFailedToChangeFilePermission)
+		}
 	}
 	s.cs.Respond(w, resp)
 }
@@ -235,7 +324,8 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cmd := exec.Command(req.Command, req.Arguments...)
-	cmd.Env = append(cmd.Env, req.Environment...)
+	currEnv := os.Environ()
+	cmd.Env = append(currEnv, req.Environment...)
 	cmd, err = runner.CommandUseUser(cmd, req.User)
 	if err != nil {
 		log.Println("ERROR:", err)

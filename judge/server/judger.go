@@ -313,6 +313,7 @@ func (j *Judger) listenMinIOEvent() {
 							resp.Error = r.StdOut
 						}
 					}
+					resp.Message = "Internal Error: " + resp.Error
 					err = j.publishToReport(resp)
 					if err != nil {
 						log.Println("ERROR:", err)
@@ -584,7 +585,8 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		return fmt.Errorf("pre-sign-report-url: %v", err)
 	}
 	err = bc.FetchObject(
-		url.String(), "solution", filepath.Join(msg.SolutionID, consts.SolutionFileName), msg.Username, os.FileMode(0600),
+		url.String(), "solution", filepath.Join(msg.SolutionID, consts.SolutionFileName),
+		msg.Username, os.FileMode(0600),
 	)
 	// NOTICE: Due to turning to async process, this is not usable
 	// defer bc.RemoveFile("solution", filepath.Join(msg.SolutionID, consts.SolutionFileName))
