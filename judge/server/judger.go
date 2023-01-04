@@ -421,7 +421,7 @@ func (j *Judger) listenMinIOEvent() {
 				if err != nil {
 					log.Println("ERROR:", err)
 				} else {
-					log.Println("Problem", id, "problem.toml:", inf.LastModified)
+					log.Println("Problem", id, "problem.toml:", inf.Size)
 				}
 				obj.Close()
 				// TODO: logic to upload to bridge on ALL MACHINES
@@ -466,9 +466,10 @@ func (j *Judger) listenMinIOEvent() {
 				)
 				if err != nil {
 					log.Println("ERROR: unarchive-problem-data:", err)
-				}
-				if !resp.Success {
-					log.Println("ERROR: unarchive-problem-data:", resp.GetError())
+				} else {
+					if !resp.Success {
+						log.Println("ERROR: unarchive-problem-data:", resp.GetError())
+					}
 				}
 				err = bc.RemoveFile("problem", filepath.Join(id, tmpFileName))
 				if err != nil {
