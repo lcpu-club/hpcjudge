@@ -1,6 +1,7 @@
 package spawncmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -48,6 +49,9 @@ func (c *Command) deleteFile(path string) error {
 }
 
 func (c *Command) cleanHomeDir(username string) error {
+	if username == "root" {
+		return fmt.Errorf("cannot clean root home")
+	}
 	u, err := user.Lookup(username)
 	if err != nil {
 		return err
@@ -57,6 +61,9 @@ func (c *Command) cleanHomeDir(username string) error {
 		return err
 	}
 	for _, entry := range entries {
+		if entry.Name() == "." || entry.Name() == ".." {
+			continue
+		}
 		err = os.RemoveAll(entry.Name())
 	}
 	if err != nil {
