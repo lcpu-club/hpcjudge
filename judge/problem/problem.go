@@ -14,9 +14,9 @@ type ProblemEntrance struct {
 
 type ProblemEnvironment struct {
 	Tags              []string                             `json:"tags" yaml:"tags" toml:"tags"`
-	ExcludeTags       []string                             `json:"exclude-tags" yaml:"exclude-tags" toml:"exclude-tags"`
-	ScriptLimits      *ProblemEnvironmentScriptLimits      `json:"script-limits" yaml:"script-limits" toml:"script-limits"`
-	EstimatedResource *ProblemEnvironmentEstimatedResource `json:"estimated-resource" yaml:"estimated-resource" toml:"estimated-resource"`
+	ExcludeTags       []string                             `json:"exclude-tags" yaml:"exclude-tags" toml:"exclude_tags"`
+	ScriptLimits      *ProblemEnvironmentScriptLimits      `json:"script-limits" yaml:"script-limits" toml:"script_limits"`
+	EstimatedResource *ProblemEnvironmentEstimatedResource `json:"estimated-resource" yaml:"estimated-resource" toml:"estimated_resource"`
 }
 
 type ProblemEnvironmentScriptLimits struct {

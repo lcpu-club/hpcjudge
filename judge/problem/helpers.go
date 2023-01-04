@@ -23,5 +23,20 @@ func GetProblemMeta(ctx context.Context, mc *minio.Client, bucket string, proble
 	if err != nil {
 		return nil, err
 	}
+	if rslt.Environment == nil {
+		rslt.Environment = &ProblemEnvironment{}
+	}
+	if rslt.Entrance == nil {
+		rslt.Entrance = &ProblemEntrance{}
+	}
+	if rslt.Environment.EstimatedResource == nil {
+		rslt.Environment.EstimatedResource = &ProblemEnvironmentEstimatedResource{}
+	}
+	if rslt.Environment.ScriptLimits == nil {
+		rslt.Environment.ScriptLimits = &ProblemEnvironmentScriptLimits{
+			CPU:    100,
+			Memory: 1024,
+		}
+	}
 	return rslt, nil
 }
