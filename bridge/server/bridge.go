@@ -326,30 +326,34 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 	// Fix home directory not created
 	if req.WorkDirectory.Partition == "home" {
 		func() {
-			s := strings.Split(wd, "/")
-			if len(s) < 2 {
-				return
-			}
-			uName := s[1]
-			u, err := user.Lookup(uName)
-			if err != nil {
-				return
-			}
-			uid, err := strconv.Atoi(u.Uid)
-			if err != nil {
-				return
-			}
-			gid, err := strconv.Atoi(u.Gid)
-			if err != nil {
-				return
-			}
-			_, err = os.Stat(wd)
+			_, err := os.Stat(wd)
 			if os.IsNotExist(err) {
-				err = os.Mkdir(wd, os.FileMode(0700))
+				uName := strings.TrimLeft(strings.TrimPrefix(wd, s.configure.StoragePath["home"]), "/")
+				log.Println("Creating home directory for user", uName)
+				u, err := user.Lookup(uName)
 				if err != nil {
+					log.Println("ERROR:", err)
 					return
 				}
-				os.Chown(wd, uid, gid)
+				uid, err := strconv.Atoi(u.Uid)
+				if err != nil {
+					log.Println("ERROR:", err)
+					return
+				}
+				gid, err := strconv.Atoi(u.Gid)
+				if err != nil {
+					log.Println("ERROR:", err)
+					return
+				}
+				err = os.Mkdir(wd, os.FileMode(0700))
+				if err != nil {
+					log.Println("ERROR:", err)
+					return
+				}
+				err = os.Chown(wd, uid, gid)
+				if err != nil {
+					log.Println("ERROR:", err)
+				}
 			}
 		}()
 	}
