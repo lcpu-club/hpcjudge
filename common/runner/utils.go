@@ -32,6 +32,11 @@ func CommandUseUser(cmd *exec.Cmd, username string) (*exec.Cmd, error) {
 			Gid: uint32(gid),
 		}
 	}
+	_, err = os.Stat(u.HomeDir)
+	if os.IsNotExist(err) {
+		os.Mkdir(u.HomeDir, os.FileMode(0700))
+		os.Chown(u.HomeDir, int(uid), int(gid))
+	}
 	cmd.Dir = u.HomeDir
 	if cmd.Env == nil {
 		cmd.Env = os.Environ()

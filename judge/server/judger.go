@@ -322,7 +322,6 @@ func (j *Judger) listenMinIOEvent() {
 					go func() {
 						time.Sleep(2500 * time.Millisecond)
 						ex, err := j.checkIfRequestExists(id, j.configure.Redis.Expire.Judge)
-						fmt.Println("log test", ex, err)
 						if err != nil {
 							log.Println("ERROR:", err)
 						}
@@ -332,11 +331,12 @@ func (j *Judger) listenMinIOEvent() {
 								log.Println("ERROR:", err)
 							}
 							err = j.publishToReport(&message.JudgeReportMessage{
-								Success:   false,
-								Error:     "Judge script exited before reporting done",
-								Done:      true,
-								Message:   "Internal Error: Judge script exited before reporting done",
-								Timestamp: time.Now().UnixMicro() - 100000, // avoid competence
+								SolutionID: id,
+								Success:    false,
+								Error:      "Judge script exited before reporting done",
+								Done:       true,
+								Message:    "Internal Error: Judge script exited before reporting done",
+								Timestamp:  time.Now().UnixMicro() - 100000, // avoid competence
 							})
 							if err != nil {
 								log.Println("ERROR:", err)
@@ -647,7 +647,7 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 	log.Println("judge message:", string(msg.Body))
 	err := json.Unmarshal(msg.Body, jMsg)
 	if err != nil {
-		fmt.Println("ERROR:", err)
+		log.Println("ERROR:", err)
 		if msg.Attempts > uint16(j.configure.Nsq.MaxAttempts) {
 			msg.Finish()
 			return nil
