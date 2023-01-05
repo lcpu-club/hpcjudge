@@ -323,6 +323,36 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 		s.cs.Respond(w, resp)
 		return
 	}
+	// Fix home directory not created
+	if req.WorkDirectory.Partition == "home" {
+		func() {
+			s := strings.Split(wd, "/")
+			if len(s) < 2 {
+				return
+			}
+			uName := s[1]
+			u, err := user.Lookup(uName)
+			if err != nil {
+				return
+			}
+			uid, err := strconv.Atoi(u.Uid)
+			if err != nil {
+				return
+			}
+			gid, err := strconv.Atoi(u.Gid)
+			if err != nil {
+				return
+			}
+			_, err = os.Stat(wd)
+			if os.IsNotExist(err) {
+				err = os.Mkdir(wd, os.FileMode(0700))
+				if err != nil {
+					return
+				}
+				os.Chown(wd, uid, gid)
+			}
+		}()
+	}
 	cmd := exec.Command(req.Command, req.Arguments...)
 	currEnv := os.Environ()
 	cmd.Env = append(currEnv, req.Environment...)
