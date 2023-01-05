@@ -474,6 +474,26 @@ func (j *Judger) listenMinIOEvent() {
 						log.Println("ERROR: unarchive-problem-data:", resp.GetError())
 					}
 				}
+				resp, err = bc.ExecuteCommand(
+					"chmod", []string{"-R", "0755", "."}, "problem", id, "root", []string{},
+				)
+				if err != nil {
+					log.Println("ERROR: chmod-problem-data:", err)
+				} else {
+					if !resp.Success {
+						log.Println("ERROR: chmod-problem-data:", resp.GetError())
+					}
+				}
+				resp, err = bc.ExecuteCommand(
+					"chown", []string{"-R", "root:root", "."}, "problem", id, "root", []string{},
+				)
+				if err != nil {
+					log.Println("ERROR: chmod-problem-data:", err)
+				} else {
+					if !resp.Success {
+						log.Println("ERROR: chmod-problem-data:", resp.GetError())
+					}
+				}
 				err = bc.RemoveFile("problem", filepath.Join(id, tmpFileName))
 				if err != nil {
 					log.Println("ERROR: remove-temp-file:", err)
