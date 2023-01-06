@@ -459,7 +459,7 @@ func (j *Judger) listenMinIOEvent() {
 				err = bc.FetchObject(
 					url.String(),
 					"problem", filepath.Join(id, tmpFileName),
-					"root", os.FileMode(0644),
+					"root", os.FileMode(0600),
 				)
 				if err != nil {
 					log.Println("ERROR: fetch-problem-data:", err)
@@ -475,7 +475,7 @@ func (j *Judger) listenMinIOEvent() {
 					}
 				}
 				resp, err = bc.ExecuteCommand(
-					"chmod", []string{"-R", "0755", "."}, "problem", id, "root", []string{},
+					"chmod", []string{"-R", "0700", "."}, "problem", id, "root", []string{},
 				)
 				if err != nil {
 					log.Println("ERROR: chmod-problem-data:", err)

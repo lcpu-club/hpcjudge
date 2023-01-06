@@ -15,14 +15,13 @@ type Replacer struct {
 	strReplacer *strings.Replacer
 }
 
-func NewReplacer(solutionID string, problemID string, user string, storagePath map[string]string) *Replacer {
+func NewReplacer(solutionID string, problemID string, user string, problemPath string, storagePath map[string]string) *Replacer {
 	rep := &Replacer{
 		solutionID:  solutionID,
 		problemID:   problemID,
 		user:        user,
 		storagePath: storagePath,
 	}
-	problemPath := filepath.Join(storagePath["problem"], problemID)
 	solutionPath := filepath.Join(storagePath["solution"], solutionID, consts.SolutionFileName)
 	rep.strReplacer = strings.NewReplacer(
 		"${solution_id}", solutionID,

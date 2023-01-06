@@ -80,14 +80,42 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		}
 	}
 	solutionPath := filepath.Join(c.configure.StoragePath["solution"], d.SolutionID)
-	problemPath := filepath.Join(c.configure.StoragePath["problem"], d.ProblemID)
+	originProblemPath := filepath.Join(c.configure.StoragePath["problem"], d.ProblemID)
 	defer func() {
 		if d.AutoRemoveSolution {
 			os.RemoveAll(solutionPath)
 			c.cleanHomeDir(d.Username)
 		}
 	}()
-	err := os.Chmod(solutionPath, os.FileMode(0755))
+	u, err := user.Lookup(d.Username)
+	if err != nil {
+		return err
+	}
+	uid, err := strconv.Atoi(u.Uid)
+	if err != nil {
+		return err
+	}
+	gid, err := strconv.Atoi(u.Gid)
+	if err != nil {
+		return err
+	}
+	problemPath := filepath.Join(u.HomeDir, "problem", d.ProblemID)
+	cpCmd := exec.Command("cp", "-Rf", originProblemPath, problemPath)
+	err = cpCmd.Run()
+	if err != nil {
+		return err
+	}
+	chownCmd := exec.Command("chown", "-R", u.Uid+":"+u.Gid, problemPath)
+	err = chownCmd.Run()
+	if err != nil {
+		return err
+	}
+	chmodCmd := exec.Command("chmod", "-R", "0700", problemPath)
+	err = chmodCmd.Run()
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(solutionPath, os.FileMode(0755))
 	if err != nil {
 		return err
 	}
@@ -97,7 +125,7 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 	if d.Command != "" {
 		cmd = exec.Command("/bin/bash", "-c", d.Command)
 	} else {
-		script, err := os.ReadFile(filepath.Join(problemPath, d.Script))
+		script, err := os.ReadFile(filepath.Join(originProblemPath, d.Script))
 		if err != nil {
 			return err
 		}
@@ -105,23 +133,12 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 			d.SolutionID,
 			d.ProblemID,
 			d.Username,
+			problemPath,
 			c.configure.StoragePath,
 		)
 		script = []byte(replacer.Replace(string(script)))
 		tmpPath = filepath.Join(solutionPath, "judge-script.sh")
 		err = os.WriteFile(tmpPath, script, os.FileMode(0755))
-		if err != nil {
-			return err
-		}
-		u, err := user.Lookup(d.Username)
-		if err != nil {
-			return err
-		}
-		uid, err := strconv.Atoi(u.Uid)
-		if err != nil {
-			return err
-		}
-		gid, err := strconv.Atoi(u.Gid)
 		if err != nil {
 			return err
 		}
@@ -131,7 +148,7 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		}
 		cmd = exec.Command("/bin/bash", tmpPath)
 	}
-	err = runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1, d.Username)
+	err = runner.WriteStatus(c.configure.StoragePath, d.ProblemID, d.SolutionID, -1, problemPath, d.Username)
 	defer runner.ClearStatus(c.configure.StoragePath, d.Username)
 	if err != nil {
 		log.Println("ERROR:", err)
@@ -149,7 +166,7 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 	}
 	defer cg.Delete()
 	err = runner.WriteStatus(
-		c.configure.StoragePath, d.ProblemID, d.SolutionID, cmd.Process.Pid, d.Username,
+		c.configure.StoragePath, d.ProblemID, d.SolutionID, cmd.Process.Pid, problemPath, d.Username,
 	)
 	if err != nil {
 		log.Println("ERROR:", err)

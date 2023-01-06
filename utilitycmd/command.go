@@ -71,7 +71,7 @@ func (c *Command) HandleProblemPath(ctx *cli.Context) error {
 		return ErrWrongArgumentNumber(ctx.Command.Name, "0 or 1")
 	}
 	subpath := ctx.Args().Get(0)
-	p := filepath.Join(c.configure.StoragePath["problem"], c.judgeStatus.ProblemID)
+	p := c.judgeStatus.ProblemStoredTo
 	if subpath != "" {
 		p = filepath.Join(p, subpath)
 	}

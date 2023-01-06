@@ -65,9 +65,10 @@ func GetCurrentUsername() (string, error) {
 }
 
 type Status struct {
-	ProblemID   string `json:"problem-id"`
-	SolutionID  string `json:"solution-id"`
-	EntrancePID int    `json:"entrance-pid"`
+	ProblemID       string `json:"problem-id"`
+	SolutionID      string `json:"solution-id"`
+	EntrancePID     int    `json:"entrance-pid"`
+	ProblemStoredTo string `json:"problem-stored-to"`
 }
 
 func getStatusFileName(storagePath map[string]string, user string) (string, error) {
@@ -100,7 +101,8 @@ func GetStatus(storagePath map[string]string) (*Status, error) {
 }
 
 func WriteStatus(
-	storagePath map[string]string, problemID string, solutionID string, entrancePID int,
+	storagePath map[string]string,
+	problemID string, solutionID string, entrancePID int, problemStoredTo string,
 	user string,
 ) error {
 	path, err := getStatusFileName(storagePath, user)
@@ -108,9 +110,10 @@ func WriteStatus(
 		return err
 	}
 	status := &Status{
-		SolutionID:  solutionID,
-		ProblemID:   problemID,
-		EntrancePID: entrancePID,
+		SolutionID:      solutionID,
+		ProblemID:       problemID,
+		EntrancePID:     entrancePID,
+		ProblemStoredTo: problemStoredTo,
 	}
 	f, err := json.Marshal(status)
 	if err != nil {
