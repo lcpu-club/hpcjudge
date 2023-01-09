@@ -731,6 +731,14 @@ func (j *Judger) HandleMessage(msg *nsq.Message) error {
 		msg.RequeueWithoutBackoff(j.configure.Nsq.RequeueDelay)
 		return nil
 	}
+	j.publishToReport(&message.JudgeReportMessage{
+		SolutionID: jMsg.SolutionID,
+		Success:    true,
+		Done:       false,
+		Score:      0,
+		Message:    "Judge started",
+		Timestamp:  time.Now().UnixMicro(),
+	})
 	msg.Finish()
 	return nil
 }

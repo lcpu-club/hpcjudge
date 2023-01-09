@@ -89,34 +89,41 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 	}()
 	u, err := user.Lookup(d.Username)
 	if err != nil {
+		log.Println("ERROR:", err)
 		return err
 	}
 	uid, err := strconv.Atoi(u.Uid)
 	if err != nil {
+		log.Println("ERROR:", err)
 		return err
 	}
 	gid, err := strconv.Atoi(u.Gid)
 	if err != nil {
+		log.Println("ERROR:", err)
 		return err
 	}
-	problemPath := filepath.Join(u.HomeDir, "problem", d.ProblemID)
+	problemPath := filepath.Join(u.HomeDir, "problem-"+d.ProblemID)
 	cpCmd := exec.Command("cp", "-Rf", originProblemPath, problemPath)
 	err = cpCmd.Run()
 	if err != nil {
+		log.Println("ERROR: cp", err)
 		return err
 	}
 	chownCmd := exec.Command("chown", "-R", u.Uid+":"+u.Gid, problemPath)
 	err = chownCmd.Run()
 	if err != nil {
+		log.Println("ERROR: chown", err)
 		return err
 	}
 	chmodCmd := exec.Command("chmod", "-R", "0700", problemPath)
 	err = chmodCmd.Run()
 	if err != nil {
+		log.Println("ERROR: chmod", err)
 		return err
 	}
 	err = os.Chmod(solutionPath, os.FileMode(0755))
 	if err != nil {
+		log.Println("ERROR:", err)
 		return err
 	}
 	var cmd *exec.Cmd
@@ -127,6 +134,7 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 	} else {
 		script, err := os.ReadFile(filepath.Join(originProblemPath, d.Script))
 		if err != nil {
+			log.Println("ERROR:", err)
 			return err
 		}
 		replacer := replacer.NewReplacer(
@@ -140,10 +148,12 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		tmpPath = filepath.Join(solutionPath, "judge-script.sh")
 		err = os.WriteFile(tmpPath, script, os.FileMode(0755))
 		if err != nil {
+			log.Println("ERROR:", err)
 			return err
 		}
 		err = os.Chown(tmpPath, uid, gid)
 		if err != nil {
+			log.Println("ERROR:", err)
 			return err
 		}
 		cmd = exec.Command("/bin/bash", tmpPath)
@@ -162,6 +172,7 @@ func (c *Command) RunJudgeScript(d *models.RunJudgeScriptData) error {
 		if cg != nil {
 			cg.Delete()
 		}
+		log.Println("ERROR:", err)
 		return err
 	}
 	defer cg.Delete()
