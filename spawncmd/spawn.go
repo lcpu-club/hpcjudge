@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/containerd/cgroups/v3"
 	"github.com/containerd/cgroups/v3/cgroup1"
@@ -64,6 +65,14 @@ func (s *Spawner) ResourceControlToCgroup(path string, res *models.ResourceContr
 	return cg, nil
 }
 
+func (s *Spawner) waitToKill(cmd *exec.Cmd, duration time.Duration) {
+	if duration == 0 {
+		return
+	}
+	time.Sleep(duration)
+	cmd.Process.Kill()
+}
+
 func (s *Spawner) SpawnCommand(cmd *exec.Cmd, user string, res *models.ResourceControl, id string) (cgroup1.Cgroup, error) {
 	if id == "" {
 		id = uuid.NewV4().String()
@@ -80,6 +89,9 @@ func (s *Spawner) SpawnCommand(cmd *exec.Cmd, user string, res *models.ResourceC
 	if err != nil {
 		cg.Delete()
 		return nil, err
+	}
+	if res.TimeLimit != 0 {
+		go s.waitToKill(cmd, res.TimeLimit)
 	}
 	err = cg.AddProc(uint64(cmd.Process.Pid))
 	if err != nil {

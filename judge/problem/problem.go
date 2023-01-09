@@ -1,5 +1,7 @@
 package problem
 
+import "time"
+
 type Problem struct {
 	ID          string              `json:"id" yaml:"id" toml:"id"`
 	Name        string              `json:"name" yaml:"name" toml:"name"`
@@ -20,8 +22,9 @@ type ProblemEnvironment struct {
 }
 
 type ProblemEnvironmentScriptLimits struct {
-	CPU    int64 `json:"cpu" yaml:"cpu" toml:"cpu"`          // in percentage, 200 for 2 CPUs, ...
-	Memory int64 `json:"memory" yaml:"memory" toml:"memory"` // in MB
+	CPU       int64         `json:"cpu" yaml:"cpu" toml:"cpu"`          // in percentage, 200 for 2 CPUs, ...
+	Memory    int64         `json:"memory" yaml:"memory" toml:"memory"` // in MB
+	TimeLimit time.Duration `json:"time-limit" yaml:"time-limit" toml:"time_limit"`
 }
 
 type ProblemEnvironmentEstimatedResource struct {

@@ -620,8 +620,9 @@ func (j *Judger) ProcessJudge(msg *message.JudgeMessage) error {
 		SolutionID: msg.SolutionID,
 		Username:   msg.Username,
 		ResourceControl: &spawnModels.ResourceControl{
-			Memory: probMeta.Environment.ScriptLimits.Memory,
-			CPU:    probMeta.Environment.ScriptLimits.CPU,
+			Memory:    probMeta.Environment.ScriptLimits.Memory,
+			CPU:       probMeta.Environment.ScriptLimits.CPU,
+			TimeLimit: probMeta.Environment.ScriptLimits.TimeLimit,
 		},
 		Command:            probMeta.Entrance.Command,
 		Script:             probMeta.Entrance.Script,
