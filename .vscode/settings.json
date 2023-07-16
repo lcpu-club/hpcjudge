@@ -17,6 +17,7 @@
     "hpcgame",
     "hpcjudge",
     "Hugepage",
+    "judgelib",
     "lookupd",
     "Lookupds",
     "minio",
@@ -33,6 +34,8 @@
     "spawncmd",
     "Tianle",
     "urfave",
-    "utilitycmd"
+    "utilitycmd",
+    "bohrium",
+    "bohr"
   ]
 }
