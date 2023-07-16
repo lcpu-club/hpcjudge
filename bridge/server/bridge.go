@@ -424,11 +424,12 @@ func (s *Server) HandleExecuteCommand(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				client := &http.Client{}
-				_, err = client.Do(req)
+				resp, err := client.Do(req)
 				if err != nil {
 					log.Println("ERROR:", err)
 					return
 				}
+				defer resp.Body.Close()
 			}
 		}()
 	}
